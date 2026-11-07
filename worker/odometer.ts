@@ -1,18 +1,10 @@
+import { formatDate, formatMiles } from '../shared/format'
 import type { Reading } from '../shared/mileage'
 import { isIsoDate } from '../shared/schedule'
 import { MAX_ODOMETER } from './baseline'
 
 export type OdometerParseResult =
   { ok: true; value: Reading } | { ok: false; fields: Record<string, string> }
-
-const miles = (n: number) => `${n.toLocaleString('en-US')} mi`
-const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
-const day = (iso: string) => DATE_FORMAT.format(new Date(`${iso}T00:00:00Z`))
 
 /** Validates a new-reading body. `today` is YYYY-MM-DD in Eastern time. */
 export function parseOdometerInput(body: unknown, today: string): OdometerParseResult {
@@ -50,13 +42,13 @@ export function findConflict(existing: Reading[], input: Reading): string | null
     .filter((r) => r.date < input.date && r.odometer > input.odometer)
     .sort((a, b) => b.odometer - a.odometer)[0]
   if (higherBefore) {
-    return `Lower than ${miles(higherBefore.odometer)} logged on ${day(higherBefore.date)}.`
+    return `Lower than ${formatMiles(higherBefore.odometer)} logged on ${formatDate(higherBefore.date)}.`
   }
   const lowerAfter = existing
     .filter((r) => r.date > input.date && r.odometer < input.odometer)
     .sort((a, b) => a.odometer - b.odometer)[0]
   if (lowerAfter) {
-    return `Higher than ${miles(lowerAfter.odometer)} logged on ${day(lowerAfter.date)}.`
+    return `Higher than ${formatMiles(lowerAfter.odometer)} logged on ${formatDate(lowerAfter.date)}.`
   }
   return null
 }

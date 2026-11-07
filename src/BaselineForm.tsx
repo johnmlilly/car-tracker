@@ -19,6 +19,7 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
   const [fieldErrors, setFieldErrors] = useState<Fields>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const dateRef = useRef<HTMLInputElement>(null)
   const odometerRef = useRef<HTMLInputElement>(null)
 
   async function save(baselineDate: string | null, baselineOdometer: number | null) {
@@ -45,11 +46,17 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const trimmed = odometer.trim()
-    // A number input reports '' for text it can't parse (e.g. "61,000" or "-"),
-    // so check badInput rather than trusting an empty value to mean "blank".
+    const errors: Fields = {}
+    // Date and number inputs report '' for partial or unparseable entries (a
+    // missing date segment, "61,000", "-"), so check badInput rather than
+    // trusting an empty value to mean "blank".
+    if (dateRef.current?.validity.badInput) errors.baselineDate = 'Enter a valid date.'
     const unparseable = odometerRef.current?.validity.badInput ?? false
     if (unparseable || (trimmed !== '' && !/^\d+$/.test(trimmed))) {
-      setFieldErrors({ baselineOdometer: 'Enter whole miles.' })
+      errors.baselineOdometer = 'Enter whole miles.'
+    }
+    if (errors.baselineDate || errors.baselineOdometer) {
+      setFieldErrors(errors)
       return
     }
     void save(date || null, trimmed === '' ? null : Number(trimmed))
@@ -69,6 +76,7 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
         </label>
         <input
           id={`${id}-date`}
+          ref={dateRef}
           type="date"
           max={today}
           value={date}

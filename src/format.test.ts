@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { describeMileage, formatDate, formatInterval, formatMiles, formatPoint } from './format'
+import { describeMileage, formatInterval, formatPoint } from './format'
 
 describe('format', () => {
-  it('formats dates without timezone shifts', () => {
-    expect(formatDate('2027-01-01')).toBe('Jan 1, 2027')
-    expect(formatDate('2026-12-31')).toBe('Dec 31, 2026')
-  })
-  it('formats miles with separators', () => {
-    expect(formatMiles(71000)).toBe('71,000 mi')
-  })
   it('joins known parts of a due point', () => {
     expect(formatPoint('2027-08-01', 71000)).toBe('Aug 1, 2027 or 71,000 mi')
     expect(formatPoint(null, 71000)).toBe('71,000 mi')

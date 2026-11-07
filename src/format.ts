@@ -1,20 +1,7 @@
 import type { MileageSummary } from '../shared/api'
+import { formatDate, formatMiles } from '../shared/format'
 
-const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
-
-/** Formats a YYYY-MM-DD string without shifting it through the local timezone. */
-export function formatDate(isoDate: string): string {
-  return DATE_FORMAT.format(new Date(`${isoDate}T00:00:00Z`))
-}
-
-export function formatMiles(miles: number): string {
-  return `${miles.toLocaleString('en-US')} mi`
-}
+export { formatDate, formatMiles }
 
 /**
  * Joins the known parts of a date/mileage point, e.g. "Oct 1, 2026 or 71,000 mi"

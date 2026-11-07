@@ -1,14 +1,16 @@
 # Coding Standards
 
-> Tuned by `/onboard` for the current scaffold: React + TypeScript + Vite, npm.
-> The planned backend (Hono on Cloudflare Workers, D1 + Drizzle, R2, Cloudflare
-> Access, Workers AI) is not installed yet. Add its conventions when the first
-> feature that uses it lands, rather than guessing them now.
+> Tuned by `/onboard` and updated as features land. Installed: React + TypeScript
+> + Vite client, Hono API on Cloudflare Workers, D1 + Drizzle, Cloudflare Access.
+> Planned but not added: R2, receipt extraction, Resend, and Cron Triggers. Add
+> their conventions when the first feature that uses them lands.
 
 ## Stack
 
 - Client: React 19 SPA built with Vite 8, client-side rendering only. Planned
   as a PWA.
+- API: Hono on Cloudflare Workers; the same Worker serves the built client.
+- Database: Cloudflare D1 through Drizzle ORM.
 - Language: TypeScript 6 (`tsconfig.app.json` for `src/`, `tsconfig.node.json`
   for Vite config).
 - Package manager: npm. Commit `package-lock.json`; don't mix in other managers.
@@ -36,11 +38,20 @@
 ## File Organization
 
 - Entry: `src/main.tsx`, root component `src/App.tsx`.
-- Static assets imported by code: `src/assets/`; files served as-is: `public/`.
-  > TODO: no component, routing, or API-client layout exists yet. Establish it
-  > with the first real feature (for example `src/components/`, `src/lib/`,
-  > `src/types/`) and record it here.
-- Server code (planned Worker) layout: > TODO when the backend is added.
+- Files served as-is: `public/`. Static assets imported by code go in a new
+  `src/assets/` folder, created with the first such asset.
+- Client: flat `src/`, one component per file (`HomePage.tsx`,
+  `OdometerForm.tsx`). `src/api.ts` holds `apiRequest` and the `useApi` hook,
+  `src/route.ts` the history-API router (`matchRoute`, `navigate`,
+  `usePathname`), `src/format.ts` display formatting, and `src/styles.ts`
+  Tailwind class strings shared by forms.
+- Worker: `worker/index.ts` is the Hono app under `/api`. Request validation
+  lives in pure functions beside it (`worker/baseline.ts`,
+  `worker/odometer.ts`); the schema is `worker/db/schema.ts`.
+- Shared: `shared/` holds code used by both the client and the Worker:
+  response types in `shared/api.ts`, pure scheduling and mileage logic
+  (`shared/schedule.ts`, `shared/mileage.ts`), and formatters whose output
+  must match on both sides (`shared/format.ts`).
 
 ## Naming
 
@@ -56,17 +67,28 @@
 - Style with utility classes. Write custom CSS only for what utilities can't
   express cleanly.
 - No component library is installed; build small components in React.
-- `src/App.css` and the non-Tailwind rules in `src/index.css` are Vite template
-  leftovers. Remove them when the first real UI replaces the template page.
 - No inline styles except for truly dynamic values.
 - Mobile-first: layouts must work on a phone (receipt capture is a mobile flow).
 
 ## Data and API Boundaries
 
-> TODO: no backend exists yet. Per the draft plan in
-> `blueprint/context/car-tracker-PLAN.md`, the client will call a Hono API on
-> Cloudflare Workers backed by D1 (Drizzle) and R2. When that lands, define here:
-> the API client location, migration workflow, and where request validation lives.
+- The client calls the API only through `apiRequest` / `useApi` in
+  `src/api.ts`. Types for request and response bodies live in `shared/api.ts`.
+- Validate every request body on the server in a pure `parse*Input(body, today)`
+  function that returns `{ ok, value }` or `{ ok: false, fields }`, with unit
+  tests. Client checks are for fast feedback only.
+- Errors use the `ErrorResponse` shape: 400 `{ error: { message, fields } }`
+  with per-field messages, 404 for an invalid or unknown id (ids are parsed
+  with the strict `parseId`), and a generic 500 from `app.onError`.
+- Migrations: edit `worker/db/schema.ts`, run `npm run db:generate`, and apply
+  with `npm run db:migrate:local`. Seed data goes in custom migrations. Apply
+  remote migrations (`npm run db:migrate:remote`) before deploying code that
+  depends on them.
+- Local D1 state is stored per `database_id`. After changing the id in
+  `wrangler.jsonc`, run `npm run db:migrate:local` again or local requests fail
+  with a 500.
+- "Today" is computed on the server in `America/New_York` (`todayInEastern`).
+  Dates are `YYYY-MM-DD` strings and mileage is integer miles.
 
 - Treat receipt uploads and AI extraction output as untrusted: validate on the
   server before writing records, and require user confirmation before extracted
