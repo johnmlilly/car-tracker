@@ -13,7 +13,7 @@ for optional tool settings.
 
 ## What this is
 
-car-tracker: a personal PWA for tracking maintenance on a 2024 Honda CR-V and a
+car-tracker: a personal PWA for tracking maintenance on a 2024 Honda Odyssey and a
 2019 Toyota Corolla. Logs service records and odometer readings, extracts data
 from receipt photos, and shows what is coming due.
 

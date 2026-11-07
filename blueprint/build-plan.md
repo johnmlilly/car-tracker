@@ -1,22 +1,25 @@
 # Build Plan
 
-List the features that make up your project, high level and in rough build order.
-Keep each item to one line; the details come later in `/feature`.
-
-Plain bullets are fine. When both planning docs are ready, run `/overview`.
-It adds tracking numbers and checkboxes to your feature list before generating
-the project overview.
-
-Run `/feature` to spec the next unchecked item, or `/feature 2` to pick one.
-Keep completed items checked and append new features as the project grows.
-Do not renumber completed features; their archived specs refer to those IDs.
-
-Scaffolding the app and prototyping its look are pre-build steps, not features.
-Start with your first real slice of functionality.
+Features in build order. Details come later in `/feature`. Run `/overview` when
+both planning docs are ready; it adds tracking numbers and checkboxes if needed.
+Do not renumber completed features; their archived specs refer to these IDs.
 
 ## Your features
 
-Replace these examples with your own features:
+### Milestone 1 - Know what's due
 
-- [ ] 1. **Feature one** - description
-- [ ] 2. **Feature two** - description
+- [ ] 1. **Vehicles and schedules foundation** - D1 schema and seed data (vehicles, canonical services, Corolla intervals, Odyssey Minder lookup), deployed to workers.dev behind Cloudflare Access with a home screen showing both vehicle cards
+- [ ] 2. **Corolla baselines and status** - enter "last done" per item; compute next due and OK / soon / overdue
+- [ ] 3. **Odometer logging and mileage estimate** - log readings and estimate current mileage from driving rate
+- [ ] 4. **Odyssey Minder code logging** - log a code shown by the car and open its due items as overdue
+- [ ] 5. **Manual service entry** - record a service with line items; each confirmed record closes only the items it covers
+
+### Milestone 2 - Receipts
+
+- [ ] 6. **Receipt upload** - camera or file capture, client-side resize, stored in R2
+- [ ] 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword mapping to services, side-by-side review, Minder code mismatch flag
+- [ ] 8. **Bulk import** - upload many past receipts and confirm them from a quick-review list; historical Minder codes record history only
+
+### Milestone 3 - Reminders
+
+- [ ] 9. **Email reminders** - Resend weekly digest (Monday 8am Eastern, only when needed), next-morning overdue alert, stale-odometer nudge

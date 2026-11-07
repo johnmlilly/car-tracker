@@ -17,8 +17,8 @@
 
 ## TypeScript
 
-- `tsconfig.app.json` does not enable `strict` yet.
-  > TODO: decide whether to turn on `"strict": true` before feature work starts.
+- Strict mode is on (`"strict": true` in `tsconfig.app.json` and
+  `tsconfig.node.json`).
 - `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, and
   `verbatimModuleSyntax` are on: use `import type` for type-only imports and
   avoid `enum` and parameter properties.
@@ -51,11 +51,15 @@
 
 ## Styling
 
-- Plain CSS today: global styles in `src/index.css`, component styles in
-  `src/App.css`. No CSS framework or component library is installed.
-  > TODO: confirm whether to stay with plain CSS or adopt a framework.
+- Tailwind CSS v4 via the `@tailwindcss/vite` plugin. CSS-first config: put
+  theme tokens in `@theme` in `src/index.css`; there is no `tailwind.config.js`.
+- Style with utility classes. Write custom CSS only for what utilities can't
+  express cleanly.
+- No component library is installed; build small components in React.
+- `src/App.css` and the non-Tailwind rules in `src/index.css` are Vite template
+  leftovers. Remove them when the first real UI replaces the template page.
 - No inline styles except for truly dynamic values.
-- Layouts must work on a phone (receipt capture is a mobile flow).
+- Mobile-first: layouts must work on a phone (receipt capture is a mobile flow).
 
 ## Data and API Boundaries
 
