@@ -1,3 +1,5 @@
+import type { MileageSummary } from '../shared/api'
+
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -36,4 +38,20 @@ export function formatInterval(miles: number | null, months: number | null): str
     months !== null ? `${months} ${months === 1 ? 'month' : 'months'}` : null,
   ].filter((p): p is string => Boolean(p))
   return `Every ${parts.join(' or ')}`
+}
+
+/** Headline and source line for a vehicle's mileage, e.g. "~61,350 mi". */
+export function describeMileage(mileage: MileageSummary | null): {
+  headline: string
+  detail: string | null
+} {
+  if (!mileage) return { headline: 'No mileage logged', detail: null }
+  const { latest } = mileage
+  if (mileage.milesPerDay === null || mileage.estimate === latest.odometer) {
+    return { headline: formatMiles(latest.odometer), detail: `Logged ${formatDate(latest.date)}` }
+  }
+  return {
+    headline: `~${formatMiles(mileage.estimate)}`,
+    detail: `Estimated from ${formatMiles(latest.odometer)} on ${formatDate(latest.date)}`,
+  }
 }

@@ -22,6 +22,7 @@ export async function apiRequest<T>(url: string, init?: RequestInit): Promise<T>
       body?.error.fields,
     )
   }
+  if (res.status === 204) return undefined as T
   return (await res.json()) as T
 }
 

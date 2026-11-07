@@ -15,6 +15,13 @@
       "when": 1794080369605,
       "tag": "0001_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794082659534,
+      "tag": "0002_odometer_logs",
+      "breakpoints": true
     }
   ]
 }

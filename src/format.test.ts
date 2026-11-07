@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatInterval, formatMiles, formatPoint } from './format'
+import { describeMileage, formatDate, formatInterval, formatMiles, formatPoint } from './format'
 
 describe('format', () => {
   it('formats dates without timezone shifts', () => {
@@ -19,5 +19,21 @@ describe('format', () => {
     expect(formatInterval(10000, 12)).toBe('Every 10,000 mi or 12 months')
     expect(formatInterval(120000, null)).toBe('Every 120,000 mi')
     expect(formatInterval(null, 1)).toBe('Every 1 month')
+  })
+  it('describes mileage', () => {
+    const latest = { date: '2026-10-15', odometer: 60200 }
+    expect(describeMileage(null)).toEqual({ headline: 'No mileage logged', detail: null })
+    expect(describeMileage({ estimate: 60200, latest, milesPerDay: null })).toEqual({
+      headline: '60,200 mi',
+      detail: 'Logged Oct 15, 2026',
+    })
+    expect(describeMileage({ estimate: 60200, latest, milesPerDay: 0 })).toEqual({
+      headline: '60,200 mi',
+      detail: 'Logged Oct 15, 2026',
+    })
+    expect(describeMileage({ estimate: 61350, latest, milesPerDay: 50 })).toEqual({
+      headline: '~61,350 mi',
+      detail: 'Estimated from 60,200 mi on Oct 15, 2026',
+    })
   })
 })

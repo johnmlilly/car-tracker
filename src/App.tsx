@@ -1,5 +1,6 @@
 import { HomePage } from './HomePage'
 import { Link } from './Link'
+import { OdometerPage } from './OdometerPage'
 import { matchRoute, usePathname } from './route'
 import { VehiclePage } from './VehiclePage'
 
@@ -22,6 +23,7 @@ function App() {
       <main className="mx-auto max-w-xl px-4 py-6">
         {route.name === 'home' && <HomePage />}
         {route.name === 'vehicle' && <VehiclePage key={route.id} id={route.id} />}
+        {route.name === 'odometer' && <OdometerPage key={route.id} id={route.id} />}
         {route.name === 'notFound' && <NotFoundPage />}
       </main>
     </div>

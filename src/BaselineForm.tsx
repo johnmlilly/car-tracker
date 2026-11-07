@@ -1,6 +1,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import type { ScheduleItemResponse, ScheduleItemView } from '../shared/api'
 import { ApiError, apiRequest } from './api'
+import { buttonClass, inputClass, primaryButtonClass } from './styles'
 
 type Fields = Partial<Record<'baselineDate' | 'baselineOdometer', string>>
 
@@ -10,10 +11,6 @@ interface BaselineFormProps {
   onSaved: () => void
   onCancel: () => void
 }
-
-const inputClass =
-  'mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-900'
-const buttonClass = 'rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50'
 
 export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormProps) {
   const id = useId()
@@ -128,7 +125,7 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
         <button
           type="submit"
           disabled={saving}
-          className={`${buttonClass} bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900`}
+          className={primaryButtonClass}
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

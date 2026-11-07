@@ -7,6 +7,7 @@ export interface Vehicle {
   name: string
   scheduleModel: ScheduleModel
   attention: { soon: number; overdue: number } | null
+  mileage: MileageSummary | null
 }
 
 export interface ScheduleItemView {
@@ -37,4 +38,25 @@ export interface VehiclesResponse {
 
 export interface ErrorResponse {
   error: { message: string; fields?: Record<string, string> }
+}
+
+export interface MileageSummary {
+  estimate: number
+  latest: { date: string; odometer: number }
+  milesPerDay: number | null
+}
+
+export interface OdometerReading {
+  id: number
+  date: string
+  odometer: number
+  source: 'manual' | 'record'
+}
+
+export interface OdometerResponse {
+  vehicle: { id: number; name: string }
+  today: string
+  mileage: MileageSummary | null
+  /** Newest first. */
+  readings: OdometerReading[]
 }

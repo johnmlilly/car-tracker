@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { check, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
+import { check, index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 export const vehicles = sqliteTable('vehicles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -48,4 +48,20 @@ export const minderCodes = sqliteTable(
       .references(() => services.id),
   },
   (t) => [unique().on(t.code, t.serviceId)],
+)
+
+export const odometerLogs = sqliteTable(
+  'odometer_logs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    vehicleId: integer('vehicle_id')
+      .notNull()
+      .references(() => vehicles.id),
+    date: text('date').notNull(),
+    odometer: integer('odometer').notNull(),
+    source: text('source', { enum: ['manual', 'record'] })
+      .notNull()
+      .default('manual'),
+  },
+  (t) => [index('odometer_logs_vehicle_id_date_idx').on(t.vehicleId, t.date)],
 )

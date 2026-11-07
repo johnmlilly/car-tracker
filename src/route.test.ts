@@ -7,7 +7,11 @@ describe('matchRoute', () => {
     expect(matchRoute('/vehicles/2')).toEqual({ name: 'vehicle', id: 2 })
     expect(matchRoute('/vehicles/2/')).toEqual({ name: 'vehicle', id: 2 })
   })
-  it.each(['/vehicles/0', '/vehicles/abc', '/vehicles', '/nope'])('rejects %s', (path) => {
+  it('matches the odometer route', () => {
+    expect(matchRoute('/vehicles/1/odometer')).toEqual({ name: 'odometer', id: 1 })
+    expect(matchRoute('/vehicles/1/odometer/')).toEqual({ name: 'odometer', id: 1 })
+  })
+  it.each(['/vehicles/0', '/vehicles/abc', '/vehicles', '/nope', '/vehicles/0/odometer', '/vehicles/1/odometer/x'])('rejects %s', (path) => {
     expect(matchRoute(path)).toEqual({ name: 'notFound' })
   })
 })

@@ -22,3 +22,11 @@
 **Why it matters:** This is the same failure as F-02, but on the date field. The date input is `type="date"` inside a `noValidate` form. When a date is only partly entered (for example month and year filled but no day, or the user deletes one segment of an existing date), browsers report `value === ""` with `validity.badInput === true`. `onChange` stores `''`, and `handleSubmit` sends `baselineDate: date || null` without checking the date input's validity. The baseline then saves odometer-only and drops the date the user meant to enter, with no field error. If the odometer is also blank, the submit sends both nulls and clears the existing baseline. Server validation cannot catch this because it receives a well-formed `null`. Evidence comes from the code path and standard browser behavior for date inputs; this pass did not reproduce it in a browser.
 **Suggested fix:** Treat the date input the same way the F-02 repair treats the odometer: add a ref and, in `handleSubmit`, show a `baselineDate` field error such as `Enter a valid date.` without saving when `validity.badInput` is true. No current requirement is lost.
 **Resolution:**
+
+### F-04 [P3] open - Worker copies the client date and miles formatters
+
+**File:** worker/odometer.ts:8
+**Found:** 2026-11-07 by /audit (scope: current; lenses: quality, security, performance, tests; independent review)
+**Why it matters:** `worker/odometer.ts` lines 8-15 define `miles`, `DATE_FORMAT`, and `day`, which are byte-for-byte copies of `formatMiles`, `DATE_FORMAT`, and `formatDate` in `src/format.ts`. The conflict messages and the UI copy must render miles and dates identically (`61,000 mi`, `Oct 1, 2026`), so two copies can drift apart silently. `shared/` already exists for code used by both the Worker and the client.
+**Suggested fix:** Move `formatDate` and `formatMiles` into a module under `shared/` (or have the Worker import them from one shared place) and delete the copies in `worker/odometer.ts`. Re-export from `src/format.ts` if that keeps client imports unchanged. No current requirement is lost.
+**Resolution:**

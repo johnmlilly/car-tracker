@@ -42,7 +42,7 @@ export function addMonths(isoDate: string, months: number): string {
   return new Date(Date.UTC(y, targetMonthIndex, Math.min(d, lastDay))).toISOString().slice(0, 10)
 }
 
-function daysBetween(fromIso: string, toIso: string): number {
+export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((Date.parse(toIso) - Date.parse(fromIso)) / DAY_MS)
 }
 

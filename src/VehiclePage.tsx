@@ -5,6 +5,7 @@ import { BaselineForm } from './BaselineForm'
 import { ErrorPanel, LoadingMessage } from './Feedback'
 import { formatInterval, formatPoint } from './format'
 import { Link } from './Link'
+import { MileageText } from './MileageText'
 import { StatusBadge } from './StatusBadge'
 
 interface RowProps {
@@ -83,7 +84,16 @@ export function VehiclePage({ id }: { id: number }) {
       )}
       {state.status === 'ready' && (
         <>
-          <h1 className="mb-6 text-2xl font-semibold">{state.data.vehicle.name}</h1>
+          <h1 className="mb-1 text-2xl font-semibold">{state.data.vehicle.name}</h1>
+          <div className="mb-6 flex items-end justify-between gap-3">
+            <MileageText mileage={state.data.vehicle.mileage} />
+            <Link
+              href={`/vehicles/${id}/odometer`}
+              className="shrink-0 text-sm font-medium underline underline-offset-2"
+            >
+              Log odometer
+            </Link>
+          </div>
           {state.data.items.length === 0 ? (
             <p className="text-zinc-500 dark:text-zinc-400">
               No interval schedule for this vehicle.
