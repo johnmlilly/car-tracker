@@ -85,14 +85,30 @@ Skills: `adopt`, `audit`, `blueprint-doctor`, `blueprint-status`, `brief`,
 
 Package manager: npm (`package-lock.json`).
 
-- Dev server: `npm run dev` (Vite, http://localhost:5173)
-- Build: `npm run build` (runs `tsc -b` typecheck, then `vite build` to `dist/`)
+- Dev server: `npm run dev` (Vite with the Worker and local D1, http://localhost:5173)
+- Build: `npm run build` (runs `tsc -b` typecheck, then builds the client and Worker into `dist/`)
 - Preview built app: `npm run preview`
 - Lint: `npm run lint` (ESLint)
+- Generate a migration from `worker/db/schema.ts`: `npm run db:generate`
+- Apply migrations to local D1: `npm run db:migrate:local` (run once before first `npm run dev`)
+- Apply migrations to remote D1: `npm run db:migrate:remote`
+- Regenerate Worker types after editing `wrangler.jsonc`: `npm run cf-typegen`
+- Deploy: `npm run deploy`
 
 No test command is configured yet, so tests are not a required gate. No
 standalone typecheck or Verify command exists; `npm run build` includes the
 typecheck.
+
+### First deploy (manual)
+
+1. `npx wrangler login`
+2. `npx wrangler d1 create car-tracker`, then copy the printed `database_id` into
+   `wrangler.jsonc` (replacing the all-zero placeholder).
+3. `npm run db:migrate:remote`
+4. `npm run deploy`
+5. In the Cloudflare dashboard, enable Cloudflare Access for the Worker's
+   `workers.dev` route and restrict it to your own email. Keep the app behind
+   Access; it has no in-app login.
 
 Testing is opt-in. If this project does not already have a unit test runner, run
 `/tests` or `$tests` to add one and update this section with the real test

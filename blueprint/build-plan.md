@@ -8,7 +8,7 @@ Do not renumber completed features; their archived specs refer to these IDs.
 
 ### Milestone 1 - Know what's due
 
-- [ ] 1. **Vehicles and schedules foundation** - D1 schema and seed data (vehicles, canonical services, Corolla intervals, Odyssey Minder lookup), deployed to workers.dev behind Cloudflare Access with a home screen showing both vehicle cards
+- [x] 1. **Vehicles and schedules foundation** - D1 schema and seed data (vehicles, canonical services, Corolla intervals, Odyssey Minder lookup), deployed to workers.dev behind Cloudflare Access with a home screen showing both vehicle cards
 - [ ] 2. **Corolla baselines and status** - enter "last done" per item; compute next due and OK / soon / overdue
 - [ ] 3. **Odometer logging and mileage estimate** - log readings and estimate current mileage from driving rate
 - [ ] 4. **Odyssey Minder code logging** - log a code shown by the car and open its due items as overdue
