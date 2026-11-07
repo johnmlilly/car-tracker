@@ -8,9 +8,7 @@
     {
       "binding": "DB",
       "database_name": "car-tracker",
-      // Placeholder until the remote database exists: replace with the id from
-      // `npx wrangler d1 create car-tracker`. Local dev does not need a real id.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "b2e926fd-28a4-4b85-ad4d-364563ad3dc1",
       "migrations_dir": "migrations"
     }
   ],
