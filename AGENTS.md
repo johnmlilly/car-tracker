@@ -89,13 +89,15 @@ Package manager: npm (`package-lock.json`).
 - Build: `npm run build` (runs `tsc -b` typecheck, then builds the client and Worker into `dist/`)
 - Preview built app: `npm run preview`
 - Lint: `npm run lint` (ESLint)
+- Test: `npm test` (Vitest, runs once; fails if no tests are found)
+- Test watch: `npm run test:watch`
 - Generate a migration from `worker/db/schema.ts`: `npm run db:generate`
 - Apply migrations to local D1: `npm run db:migrate:local` (run once before first `npm run dev`)
 - Apply migrations to remote D1: `npm run db:migrate:remote`
 - Regenerate Worker types after editing `wrangler.jsonc`: `npm run cf-typegen`
 - Deploy: `npm run deploy`
 
-No test command is configured yet, so tests are not a required gate. No
+Tests are a gate for logic-bearing steps (see `coding-standards.md`). No
 standalone typecheck or Verify command exists; `npm run build` includes the
 typecheck.
 

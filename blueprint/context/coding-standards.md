@@ -121,10 +121,13 @@ of the switch; the skills and `ai-interaction.md` only point back here.
 - Run them via the project's test command (see Commands in `AGENTS.md`), not a
   hardcoded tool name.
 
-Stack binding: no runner is installed. For this Vite + TypeScript project the
-natural choice is Vitest, with `vi.mock()` for external dependencies and
-`vi.useFakeTimers()` for time-dependent logic such as due-date calculations.
-Add it with `/tests`.
+Stack binding: Vitest (`vitest.config.ts`, separate from `vite.config.ts` so tests
+run in plain Node without the Cloudflare plugin). Test files live next to source
+under `src/`, `worker/`, or `shared/` as `*.test.ts(x)`. Test Worker routes through
+`app.request(path, init, env)` with a stub `env`, as in `worker/index.test.ts`;
+keep due-date and status math in pure functions so it can be tested without D1.
+Use `vi.mock()` for external dependencies and `vi.useFakeTimers()` for
+time-dependent logic such as due-date calculations.
 
 ## Browser Verification
 
