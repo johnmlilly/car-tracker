@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import type { ScheduleItemView, VehicleDetailResponse } from '../shared/api'
+import type { DueItemView, ScheduleItemView, VehicleDetailResponse } from '../shared/api'
 import { useApi } from './api'
 import { BaselineForm } from './BaselineForm'
 import { ErrorPanel, LoadingMessage } from './Feedback'
-import { formatInterval, formatPoint } from './format'
+import { formatDate, formatInterval, formatPoint } from './format'
 import { Link } from './Link'
 import { MileageText } from './MileageText'
 import { StatusBadge } from './StatusBadge'
@@ -28,6 +28,11 @@ function ScheduleItemRow({ item, today, onSaved }: RowProps) {
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {formatInterval(item.intervalMiles, item.intervalMonths)}
           </p>
+          {item.minderSince && (
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+              Minder {item.minderSince.code} on {formatDate(item.minderSince.date)}
+            </p>
+          )}
         </div>
         <StatusBadge status={item.status} hasBaseline={hasBaseline} />
       </div>
@@ -61,6 +66,61 @@ function ScheduleItemRow({ item, today, onSaved }: RowProps) {
   )
 }
 
+function DueItemRow({ item }: { item: DueItemView }) {
+  return (
+    <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="font-medium">{item.serviceName}</h3>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            From {item.since.code} on {formatDate(item.since.date)}
+          </p>
+        </div>
+        <StatusBadge status={item.status} hasBaseline />
+      </div>
+    </li>
+  )
+}
+
+const sectionHeadingClass = 'mb-2 text-lg font-medium'
+
+function VehicleItems({ data, onSaved }: { data: VehicleDetailResponse; onSaved: () => void }) {
+  const isMinder = data.vehicle.scheduleModel === 'minder'
+  if (data.items.length === 0 && data.dueItems.length === 0) {
+    return (
+      <p className="text-zinc-500 dark:text-zinc-400">
+        {isMinder
+          ? 'Nothing due. Log a code when the car shows one.'
+          : 'No interval schedule for this vehicle.'}
+      </p>
+    )
+  }
+  return (
+    <div className="grid gap-6">
+      {data.dueItems.length > 0 && (
+        <section>
+          <h2 className={sectionHeadingClass}>From Minder codes</h2>
+          <ul className="grid gap-3">
+            {data.dueItems.map((item) => (
+              <DueItemRow key={item.serviceName} item={item} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {data.items.length > 0 && (
+        <section>
+          {isMinder && <h2 className={sectionHeadingClass}>Schedule</h2>}
+          <ul className="grid gap-3">
+            {data.items.map((item) => (
+              <ScheduleItemRow key={item.id} item={item} today={data.today} onSaved={onSaved} />
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
+}
+
 export function VehiclePage({ id }: { id: number }) {
   const { state, retry, refresh } = useApi<VehicleDetailResponse>(`/api/vehicles/${id}`)
 
@@ -87,29 +147,24 @@ export function VehiclePage({ id }: { id: number }) {
           <h1 className="mb-1 text-2xl font-semibold">{state.data.vehicle.name}</h1>
           <div className="mb-6 flex items-end justify-between gap-3">
             <MileageText mileage={state.data.vehicle.mileage} />
-            <Link
-              href={`/vehicles/${id}/odometer`}
-              className="shrink-0 text-sm font-medium underline underline-offset-2"
-            >
-              Log odometer
-            </Link>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              {state.data.vehicle.scheduleModel === 'minder' && (
+                <Link
+                  href={`/vehicles/${id}/minder`}
+                  className="text-sm font-medium underline underline-offset-2"
+                >
+                  Log Minder code
+                </Link>
+              )}
+              <Link
+                href={`/vehicles/${id}/odometer`}
+                className="text-sm font-medium underline underline-offset-2"
+              >
+                Log odometer
+              </Link>
+            </div>
           </div>
-          {state.data.items.length === 0 ? (
-            <p className="text-zinc-500 dark:text-zinc-400">
-              No interval schedule for this vehicle.
-            </p>
-          ) : (
-            <ul className="grid gap-3">
-              {state.data.items.map((item) => (
-                <ScheduleItemRow
-                  key={item.id}
-                  item={item}
-                  today={state.data.today}
-                  onSaved={refresh}
-                />
-              ))}
-            </ul>
-          )}
+          <VehicleItems data={state.data} onSaved={refresh} />
         </>
       )}
     </>

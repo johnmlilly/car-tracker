@@ -65,3 +65,31 @@ export const odometerLogs = sqliteTable(
   },
   (t) => [index('odometer_logs_vehicle_id_date_idx').on(t.vehicleId, t.date)],
 )
+
+export const minderLogs = sqliteTable(
+  'minder_logs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    vehicleId: integer('vehicle_id')
+      .notNull()
+      .references(() => vehicles.id),
+    code: text('code').notNull(),
+    loggedAt: text('logged_at').notNull(),
+    odometer: integer('odometer'),
+  },
+  (t) => [index('minder_logs_vehicle_id_logged_at_idx').on(t.vehicleId, t.loggedAt)],
+)
+
+export const dueItems = sqliteTable(
+  'due_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    minderLogId: integer('minder_log_id')
+      .notNull()
+      .references(() => minderLogs.id),
+    serviceId: integer('service_id')
+      .notNull()
+      .references(() => services.id),
+  },
+  (t) => [unique().on(t.minderLogId, t.serviceId)],
+)

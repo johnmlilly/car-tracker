@@ -1,6 +1,6 @@
 # car-tracker - Project Overview
 
-<!-- blueprint:source-hash d247f0874dc1836cd0e4b73a376a9c1ba0bcb4dd64e210ffb2f1027bc800d0ad -->
+<!-- blueprint:source-hash baf2ef4895e7d46304c57f63dd304e3ca2f76609ea2e4f3b34614cdf91aa57d3 -->
 
 > Personal, single-user PWA that tracks maintenance for a 2024 Honda Odyssey and a
 > 2019 Toyota Corolla: service history from receipt photos, what's due, and email
@@ -31,11 +31,13 @@ record.
 
 ## Scheduling rules
 
-Two models, chosen per vehicle. These rules drive several features; keep them
-consistent.
+Both vehicles use fixed intervals; the Odyssey also logs Maintenance Minder codes
+on top. These rules drive several features; keep them consistent.
 
-**Corolla - fixed intervals**
-- Each service has an interval in miles and/or months (seeded, editable).
+**Fixed intervals (both vehicles)**
+- Each service has an interval in miles and/or months (seeded, editable). The
+  Odyssey starts with the Corolla's services and intervals, except tire rotation
+  every 5,000 miles.
 - One-time "last done" baseline per item (date and/or mileage).
 - Next due = last done + interval; whichever of miles or date comes first.
 - "Last done" = newest confirmed service for the item, regardless of entry or
@@ -43,13 +45,16 @@ consistent.
 - Status: **soon** within 1,000 miles or 30 days of due; **overdue** past either;
   otherwise **OK**.
 
-**Odyssey - Honda Maintenance Minder**
+**Odyssey - Honda Maintenance Minder (in addition to intervals)**
 - Car shows a code (main letter A/B plus numbered sub-items, e.g. `B12`).
 - Lookup table maps letter and sub-items to canonical services.
 - Logging a code opens the mapped services as due items, **overdue immediately**.
 - Receipt Minder code is a cross-check: mismatch with the open logged code is
   flagged at review; user picks the correct code before confirming.
-- No forecasting: after service, nothing is due until a new code is logged.
+- No forecasting: after service, the Minder item is closed and only the
+  service's interval (if any) drives its status until a new code is logged.
+- A service with both an interval and an open Minder item takes the worse
+  status; an open Minder item is always overdue.
 - Historical codes on bulk-imported receipts record history only; they never open
   due items.
 
@@ -60,7 +65,7 @@ consistent.
 **Mileage**
 - Readings come from manual odometer logs and confirmed service records.
 - Current mileage is estimated from recent readings and driving rate; used for
-  Corolla mileage due points.
+  mileage due points on both vehicles.
 
 ## Features
 
@@ -74,7 +79,9 @@ Milestone 1 - Know what's due
    and OK / soon / overdue.
 3. **Odometer logging and mileage estimate** - log readings; estimate current
    mileage from driving rate.
-4. **Odyssey Minder code logging** - log a code and open its due items as overdue.
+4. **Odyssey Minder code logging** - Odyssey gets the Corolla's interval schedule
+   (tire rotation every 5,000 mi); log a code to open its due items as overdue;
+   worse of interval and Minder status wins.
 5. **Manual service entry** - record a service with line items; closes only the
    items it covers.
 
@@ -106,7 +113,8 @@ timestamps ISO strings, money in integer cents, mileage in integer miles.
 ### vehicles
 - `id` (int, pk)
 - `name` (text) - "2024 Honda Odyssey", "2019 Toyota Corolla"
-- `scheduleModel` (enum: `interval` | `minder`)
+- `scheduleModel` (enum: `interval` | `minder`) - `minder` means intervals plus
+  Minder code logging
 - Seeded only; no create/edit UI in the MVP.
 
 ### services
@@ -114,7 +122,7 @@ timestamps ISO strings, money in integer cents, mileage in integer miles.
 - `name` (text, unique) - canonical service, e.g. "Oil change", "Tire rotation"
 - `keywords` (text, JSON array) - used to match receipt line items
 
-### schedule_items (Corolla)
+### schedule_items (both vehicles)
 - `id` (int, pk)
 - `vehicleId` (fk -> vehicles)
 - `serviceId` (fk -> services); unique per vehicle
@@ -181,7 +189,7 @@ timestamps ISO strings, money in integer cents, mileage in integer miles.
 - `itemKey` (text, nullable) - identifies the overdue item for alert dedupe
 - `sentAt` (timestamp)
 
-> TODO: exact Corolla intervals and Odyssey Minder sub-item meanings come from the
+> TODO: exact intervals (both vehicles) and Odyssey Minder sub-item meanings come from the
 > owner's manuals and are verified by hand in feature 1.
 
 ### extractReceipt() contract
@@ -219,7 +227,7 @@ a text label, never color alone.
   record.
 - **Bulk quick-review list** - one editable row per receipt (date, shop, odometer,
   services), batch confirm, full review on demand. Designed for laptop width.
-- **Corolla baselines**, **odometer log**, **Minder code log**, **manual entry**
+- **Interval baselines** (both vehicles), **odometer log**, **Minder code log**, **manual entry**
   forms.
 
 > TODO: route paths are not set in the plan; choose them in feature 1.
@@ -245,6 +253,6 @@ a text label, never color alone.
 
 > Resolve in the plans, then re-run /overview.
 
-- Corolla intervals and Odyssey Minder sub-item meanings (owner's manuals, feature 1).
+- Intervals for both vehicles and Odyssey Minder sub-item meanings (owner's manuals; Odyssey intervals copied from the Corolla in feature 4).
 - Route paths (feature 1).
 - Worker, D1, and R2 names and Access policy (feature 1).

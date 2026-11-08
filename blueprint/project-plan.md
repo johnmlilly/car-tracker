@@ -34,19 +34,23 @@ Vehicles (seeded, not user-created in the MVP):
 - 2024 Honda Odyssey
 - 2019 Toyota Corolla
 
-### Scheduling model (two different models, by vehicle)
+### Scheduling model
 
-**Corolla - fixed intervals.**
+Both vehicles use fixed intervals. The Odyssey also logs Honda Maintenance Minder
+codes on top of its intervals.
+
+**Fixed intervals (both vehicles).**
 
 - Each canonical service has an interval in miles and/or months, seeded from the
-  Toyota maintenance schedule and editable.
+  maintenance schedule and editable. The Odyssey starts with the same services
+  and intervals as the Corolla, except tire rotation every 5,000 miles.
 - A one-time **"last done" baseline** per item (date and/or mileage) seeds the
   starting point, so the dashboard is useful on day one without history.
 - Next due = last done + interval, by miles and by date; whichever comes first.
 - "Last done" is always the **newest confirmed** service for that item,
   regardless of the order records were entered or imported.
 
-**Odyssey - Honda Maintenance Minder.**
+**Odyssey - Honda Maintenance Minder (in addition to intervals).**
 
 - The car decides when service is due and shows a code (for example `B12`): a main
   letter (A or B) plus numbered sub-items.
@@ -58,8 +62,11 @@ Vehicles (seeded, not user-created in the MVP):
 - The code is also read from receipts as a **cross-check**: if the receipt's code
   differs from the logged code, review flags it and I pick the correct one before
   confirming.
-- The app does not forecast the next Minder code. After service, the Odyssey shows
-  nothing due until I log a new code.
+- The app does not forecast the next Minder code. After service, a service's
+  Minder item is closed and only its interval (if any) drives its status until I
+  log a new code.
+- When a service has both an interval and an open Minder item, the worse status
+  wins: an open Minder item is always overdue.
 
 ### Closing due items
 
@@ -70,16 +77,16 @@ Vehicles (seeded, not user-created in the MVP):
 ### Status
 
 - Each item is **OK**, **soon**, or **overdue**.
-- Corolla "soon": within **1,000 miles or 30 days** of the due point, whichever
-  comes first. "Overdue": past either.
-- Odyssey logged Minder items: overdue immediately.
+- Interval items (both vehicles) "soon": within **1,000 miles or 30 days** of the
+  due point, whichever comes first. "Overdue": past either.
+- Odyssey logged Minder items: overdue immediately, regardless of interval.
 - Status is shown with color plus a text label, never color alone.
 
 ### Mileage
 
 - I log odometer readings directly; receipts also contribute readings.
 - Current mileage is estimated from recent readings and driving rate, and used for
-  Corolla mileage-based due points.
+  mileage-based due points on both vehicles.
 
 ### Data entry
 
@@ -132,10 +139,10 @@ Vehicles (seeded, not user-created in the MVP):
 
 ## 4. Data - What are we storing?
 
-- `vehicles`: the two seeded vehicles and which scheduling model each uses
+- `vehicles`: the two seeded vehicles and whether each also uses Minder codes
 - `services`: canonical service types (oil change, tire rotation, cabin filter,
   and so on) with keywords for receipt matching
-- `schedule_items`: per-vehicle Corolla intervals (miles and/or months), seeded
+- `schedule_items`: per-vehicle intervals (miles and/or months), seeded
   and editable, plus the "last done" baseline
 - `minder_codes`: Odyssey lookup from main letter and sub-item numbers to services
 - `minder_logs`: codes I logged, when, at what mileage, and which items they opened

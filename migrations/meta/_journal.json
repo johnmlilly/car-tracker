@@ -22,6 +22,20 @@
       "when": 1794082659534,
       "tag": "0002_odometer_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794100642718,
+      "tag": "0003_minder_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794101985502,
+      "tag": "0004_odyssey_intervals",
+      "breakpoints": true
     }
   ]
 }
