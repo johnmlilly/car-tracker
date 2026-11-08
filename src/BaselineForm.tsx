@@ -1,7 +1,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import type { ScheduleItemResponse, ScheduleItemView } from '../shared/api'
-import { ApiError, apiRequest } from './api'
-import { buttonClass, inputClass, primaryButtonClass } from './styles'
+import { submitJson } from './api'
+import { buttonClass, errorTextClass, inputClass, primaryButtonClass } from './styles'
 
 type Fields = Partial<Record<'baselineDate' | 'baselineOdometer', string>>
 
@@ -25,22 +25,18 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
   async function save(baselineDate: string | null, baselineOdometer: number | null) {
     setSaving(true)
     setFormError(null)
-    try {
-      await apiRequest<ScheduleItemResponse>(`/api/schedule-items/${item.id}/baseline`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baselineDate, baselineOdometer }),
-      })
+    const result = await submitJson<ScheduleItemResponse>(
+      `/api/schedule-items/${item.id}/baseline`,
+      'PUT',
+      { baselineDate, baselineOdometer },
+    )
+    if (result.ok) {
       onSaved()
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 400 && err.fields) {
-        setFieldErrors(err.fields)
-      } else {
-        console.error(err)
-        setFormError("Couldn't save. Try again.")
-      }
-      setSaving(false)
+      return
     }
+    if ('fields' in result) setFieldErrors(result.fields)
+    else setFormError(result.error)
+    setSaving(false)
   }
 
   function handleSubmit(event: FormEvent) {
@@ -89,7 +85,7 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
           className={inputClass}
         />
         {fieldErrors.baselineDate && (
-          <p id={dateErrorId} role="alert" className="mt-1 text-sm text-red-700 dark:text-red-300">
+          <p id={dateErrorId} role="alert" className={`mt-1 ${errorTextClass}`}>
             {fieldErrors.baselineDate}
           </p>
         )}
@@ -115,17 +111,13 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
           className={inputClass}
         />
         {fieldErrors.baselineOdometer && (
-          <p
-            id={odometerErrorId}
-            role="alert"
-            className="mt-1 text-sm text-red-700 dark:text-red-300"
-          >
+          <p id={odometerErrorId} role="alert" className={`mt-1 ${errorTextClass}`}>
             {fieldErrors.baselineOdometer}
           </p>
         )}
       </div>
       {formError && (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+        <p role="alert" className={errorTextClass}>
           {formError}
         </p>
       )}

@@ -12,7 +12,7 @@ Do not renumber completed features; their archived specs refer to these IDs.
 - [x] 2. **Corolla baselines and status** - enter "last done" per item; compute next due and OK / soon / overdue
 - [x] 3. **Odometer logging and mileage estimate** - log readings and estimate current mileage from driving rate
 - [x] 4. **Odyssey Minder code logging** - Odyssey gets the same interval schedule as the Corolla (tire rotation every 5,000 mi); log a code shown by the car and open its due items as overdue; worse of interval and Minder status wins
-- [ ] 5. **Manual service entry** - record a service with line items; each confirmed record closes only the items it covers
+- [x] 5. **Manual service entry** - record a service with line items; each confirmed record closes only the items it covers
 
 ### Milestone 2 - Receipts
 

@@ -1,6 +1,5 @@
 import { isIsoDate } from '../shared/schedule'
-
-export const MAX_ODOMETER = 999_999
+import { MILES_MESSAGE, parseMiles } from './validate'
 
 export interface BaselineInput {
   baselineDate: string | null
@@ -32,15 +31,8 @@ export function parseBaselineInput(body: unknown, today: string): ParseResult {
   const odometer = input.baselineOdometer
   if (!('baselineOdometer' in input)) {
     fields.baselineOdometer = 'Required (use null to leave blank).'
-  } else if (odometer !== null) {
-    if (
-      typeof odometer !== 'number' ||
-      !Number.isInteger(odometer) ||
-      odometer < 0 ||
-      odometer > MAX_ODOMETER
-    ) {
-      fields.baselineOdometer = `Enter whole miles from 0 to ${MAX_ODOMETER.toLocaleString('en-US')}.`
-    }
+  } else if (parseMiles(odometer) === undefined) {
+    fields.baselineOdometer = MILES_MESSAGE
   }
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }

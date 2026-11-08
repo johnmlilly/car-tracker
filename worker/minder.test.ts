@@ -169,6 +169,8 @@ describe('mergeMinderStatus', () => {
     intervalMonths: 6,
     baselineDate: null,
     baselineOdometer: null,
+    lastDoneDate: null,
+    lastDoneOdometer: null,
     nextDueDate: null,
     nextDueMiles: null,
     status,

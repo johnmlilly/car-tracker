@@ -26,6 +26,36 @@ export async function apiRequest<T>(url: string, init?: RequestInit): Promise<T>
   return (await res.json()) as T
 }
 
+export type SubmitResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; fields: Record<string, string> }
+  | { ok: false; error: string }
+
+/**
+ * Sends `body` as JSON. A 400 with field messages comes back as `fields` for
+ * the form to show inline; any other failure is logged and becomes `error`.
+ */
+export async function submitJson<T>(
+  url: string,
+  method: 'POST' | 'PUT',
+  body: unknown,
+): Promise<SubmitResult<T>> {
+  try {
+    const data = await apiRequest<T>(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { ok: true, data }
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 400 && err.fields) {
+      return { ok: false, fields: err.fields }
+    }
+    console.error(err)
+    return { ok: false, error: "Couldn't save. Try again." }
+  }
+}
+
 export type LoadState<T> =
   | { status: 'loading' }
   | { status: 'error' }

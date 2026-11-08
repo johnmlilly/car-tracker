@@ -150,3 +150,52 @@ describe('minder routes', () => {
     expect(await res.json()).toEqual({ error: { message: 'Minder log not found' } })
   })
 })
+
+describe('service record routes', () => {
+  const unusedDb = {} as D1Database
+  const post = (id: string, body: string) =>
+    app.request(
+      `/api/vehicles/${id}/service-records`,
+      { method: 'POST', body, headers: { 'Content-Type': 'application/json' } },
+      { DB: unusedDb },
+    )
+
+  it.each(['abc', '0', '01'])('GET returns 404 for invalid vehicle id %s', async (id) => {
+    const res = await app.request(`/api/vehicles/${id}/service-records`, {}, { DB: unusedDb })
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual({ error: { message: 'Vehicle not found' } })
+  })
+
+  it('POST returns 404 for an invalid vehicle id', async () => {
+    const res = await post('x', JSON.stringify({ date: '2026-01-01', items: [] }))
+    expect(res.status).toBe(404)
+  })
+
+  it('POST returns 400 with field messages for invalid input', async () => {
+    const res = await post(
+      '1',
+      JSON.stringify({ date: '2999-01-01', odometer: -5, items: [{ description: '' }] }),
+    )
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { message: string; fields: Record<string, string> }
+    }
+    expect(body.error.message).toBe('Invalid service record')
+    expect(Object.keys(body.error.fields).sort()).toEqual([
+      'date',
+      'items.0.description',
+      'odometer',
+    ])
+  })
+
+  it('POST returns 400 for a body that is not JSON', async () => {
+    const res = await post('1', 'not json')
+    expect(res.status).toBe(400)
+  })
+
+  it('DELETE returns 404 for an invalid id', async () => {
+    const res = await app.request('/api/service-records/0', { method: 'DELETE' }, { DB: unusedDb })
+    expect(res.status).toBe(404)
+    expect(await res.json()).toEqual({ error: { message: 'Service record not found' } })
+  })
+})

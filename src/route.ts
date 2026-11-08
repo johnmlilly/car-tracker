@@ -5,6 +5,7 @@ export type Route =
   | { name: 'vehicle'; id: number }
   | { name: 'odometer'; id: number }
   | { name: 'minder'; id: number }
+  | { name: 'services'; id: number }
   | { name: 'notFound' }
 
 export function matchRoute(pathname: string): Route {
@@ -15,6 +16,8 @@ export function matchRoute(pathname: string): Route {
   if (odometer) return { name: 'odometer', id: Number(odometer[1]) }
   const minder = /^\/vehicles\/([1-9]\d{0,9})\/minder\/?$/.exec(pathname)
   if (minder) return { name: 'minder', id: Number(minder[1]) }
+  const services = /^\/vehicles\/([1-9]\d{0,9})\/services\/?$/.exec(pathname)
+  if (services) return { name: 'services', id: Number(services[1]) }
   return { name: 'notFound' }
 }
 

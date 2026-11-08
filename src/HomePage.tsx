@@ -41,6 +41,13 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       <div className="mt-3 flex items-end justify-between gap-3">
         <MileageText mileage={vehicle.mileage} />
         <div className="flex shrink-0 flex-col items-end gap-1">
+          <Link
+            href={`/vehicles/${vehicle.id}/services`}
+            className={actionClass}
+            aria-label={`Add service for ${vehicle.name}`}
+          >
+            Add service
+          </Link>
           {vehicle.scheduleModel === 'minder' && (
             <Link
               href={`/vehicles/${vehicle.id}/minder`}

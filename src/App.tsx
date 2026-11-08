@@ -3,6 +3,7 @@ import { Link } from './Link'
 import { OdometerPage } from './OdometerPage'
 import { MinderPage } from './MinderPage'
 import { matchRoute, usePathname } from './route'
+import { ServicesPage } from './ServicesPage'
 import { VehiclePage } from './VehiclePage'
 
 function NotFoundPage() {
@@ -26,6 +27,7 @@ function App() {
         {route.name === 'vehicle' && <VehiclePage key={route.id} id={route.id} />}
         {route.name === 'odometer' && <OdometerPage key={route.id} id={route.id} />}
         {route.name === 'minder' && <MinderPage key={route.id} id={route.id} />}
+        {route.name === 'services' && <ServicesPage key={route.id} id={route.id} />}
         {route.name === 'notFound' && <NotFoundPage />}
       </main>
     </div>

@@ -62,6 +62,8 @@ export const odometerLogs = sqliteTable(
     source: text('source', { enum: ['manual', 'record'] })
       .notNull()
       .default('manual'),
+    /** Set only for `source: 'record'`; the record owns this reading. */
+    serviceRecordId: integer('service_record_id').references(() => serviceRecords.id),
   },
   (t) => [index('odometer_logs_vehicle_id_date_idx').on(t.vehicleId, t.date)],
 )
@@ -90,6 +92,42 @@ export const dueItems = sqliteTable(
     serviceId: integer('service_id')
       .notNull()
       .references(() => services.id),
+    /** Null while the item is open (overdue). */
+    closedByServiceItemId: integer('closed_by_service_item_id').references(
+      () => serviceItems.id,
+    ),
   },
   (t) => [unique().on(t.minderLogId, t.serviceId)],
+)
+
+export const serviceRecords = sqliteTable(
+  'service_records',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    vehicleId: integer('vehicle_id')
+      .notNull()
+      .references(() => vehicles.id),
+    date: text('date').notNull(),
+    odometer: integer('odometer'),
+    shop: text('shop'),
+    totalCents: integer('total_cents'),
+    source: text('source', { enum: ['manual', 'receipt', 'import'] })
+      .notNull()
+      .default('manual'),
+  },
+  (t) => [index('service_records_vehicle_id_date_idx').on(t.vehicleId, t.date)],
+)
+
+export const serviceItems = sqliteTable(
+  'service_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    serviceRecordId: integer('service_record_id')
+      .notNull()
+      .references(() => serviceRecords.id),
+    description: text('description').notNull(),
+    serviceId: integer('service_id').references(() => services.id),
+    amountCents: integer('amount_cents'),
+  },
+  (t) => [index('service_items_service_record_id_idx').on(t.serviceRecordId)],
 )

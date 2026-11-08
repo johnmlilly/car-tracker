@@ -7,8 +7,8 @@ const DAY_MS = 86_400_000
 export interface IntervalInput {
   intervalMiles: number | null
   intervalMonths: number | null
-  baselineDate: string | null
-  baselineOdometer: number | null
+  lastDoneDate: string | null
+  lastDoneOdometer: number | null
 }
 
 export interface DuePoint {
@@ -46,15 +46,40 @@ export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((Date.parse(toIso) - Date.parse(fromIso)) / DAY_MS)
 }
 
+export interface LastDone {
+  lastDoneDate: string | null
+  lastDoneOdometer: number | null
+}
+
+/**
+ * "Last done" from the one-time baseline and confirmed service records, per
+ * dimension: the latest date and the highest odometer. A record without an
+ * odometer advances only the date. Entry order doesn't matter.
+ */
+export function resolveLastDone(
+  baseline: { baselineDate: string | null; baselineOdometer: number | null },
+  records: { date: string; odometer: number | null }[],
+): LastDone {
+  let lastDoneDate = baseline.baselineDate
+  let lastDoneOdometer = baseline.baselineOdometer
+  for (const record of records) {
+    if (lastDoneDate === null || record.date > lastDoneDate) lastDoneDate = record.date
+    if (record.odometer !== null && (lastDoneOdometer === null || record.odometer > lastDoneOdometer)) {
+      lastDoneOdometer = record.odometer
+    }
+  }
+  return { lastDoneDate, lastDoneOdometer }
+}
+
 export function computeDue(item: IntervalInput): DuePoint {
   return {
     nextDueDate:
-      item.baselineDate !== null && item.intervalMonths !== null
-        ? addMonths(item.baselineDate, item.intervalMonths)
+      item.lastDoneDate !== null && item.intervalMonths !== null
+        ? addMonths(item.lastDoneDate, item.intervalMonths)
         : null,
     nextDueMiles:
-      item.baselineOdometer !== null && item.intervalMiles !== null
-        ? item.baselineOdometer + item.intervalMiles
+      item.lastDoneOdometer !== null && item.intervalMiles !== null
+        ? item.lastDoneOdometer + item.intervalMiles
         : null,
   }
 }

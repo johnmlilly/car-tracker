@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import type { OdometerResponse } from '../shared/api'
-import { ApiError, apiRequest } from './api'
+import { submitJson } from './api'
 import { errorTextClass, inputClass, primaryButtonClass } from './styles'
 
 type Fields = Partial<Record<'date' | 'odometer', string>>
@@ -24,23 +24,19 @@ export function OdometerForm({ vehicleId, today, onSaved }: OdometerFormProps) {
   async function save(reading: { date: string; odometer: number }) {
     setSaving(true)
     setFormError(null)
-    try {
-      await apiRequest<OdometerResponse>(`/api/vehicles/${vehicleId}/odometer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reading),
-      })
+    const result = await submitJson<OdometerResponse>(
+      `/api/vehicles/${vehicleId}/odometer`,
+      'POST',
+      reading,
+    )
+    setSaving(false)
+    if (result.ok) {
       setOdometer('')
       onSaved()
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 400 && err.fields) {
-        setFieldErrors(err.fields)
-      } else {
-        console.error(err)
-        setFormError("Couldn't save. Try again.")
-      }
-    } finally {
-      setSaving(false)
+    } else if ('fields' in result) {
+      setFieldErrors(result.fields)
+    } else {
+      setFormError(result.error)
     }
   }
 

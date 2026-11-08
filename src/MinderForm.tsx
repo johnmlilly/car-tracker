@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import type { MinderResponse } from '../shared/api'
-import { ApiError, apiRequest } from './api'
+import { submitJson } from './api'
 import { errorTextClass, inputClass, primaryButtonClass } from './styles'
 
 type Fields = Partial<Record<'code' | 'odometer', string>>
@@ -17,24 +17,20 @@ export function MinderForm({ vehicleId, onSaved }: { vehicleId: number; onSaved:
   async function save(body: { code: string; odometer: number | null }) {
     setSaving(true)
     setFormError(null)
-    try {
-      await apiRequest<MinderResponse>(`/api/vehicles/${vehicleId}/minder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+    const result = await submitJson<MinderResponse>(
+      `/api/vehicles/${vehicleId}/minder`,
+      'POST',
+      body,
+    )
+    setSaving(false)
+    if (result.ok) {
       setCode('')
       setOdometer('')
       onSaved()
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 400 && err.fields) {
-        setFieldErrors(err.fields)
-      } else {
-        console.error(err)
-        setFormError("Couldn't save. Try again.")
-      }
-    } finally {
-      setSaving(false)
+    } else if ('fields' in result) {
+      setFieldErrors(result.fields)
+    } else {
+      setFormError(result.error)
     }
   }
 

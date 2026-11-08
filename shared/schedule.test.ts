@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { addMonths, computeDue, computeStatus, isIsoDate, todayInEastern } from './schedule'
+import {
+  addMonths,
+  computeDue,
+  computeStatus,
+  isIsoDate,
+  resolveLastDone,
+  todayInEastern,
+} from './schedule'
 
 describe('todayInEastern', () => {
   it('uses the Eastern date, not UTC', () => {
@@ -34,15 +41,15 @@ describe('computeDue', () => {
   const base = {
     intervalMiles: 10000,
     intervalMonths: 12,
-    baselineDate: null,
-    baselineOdometer: null,
+    lastDoneDate: null,
+    lastDoneOdometer: null,
   }
 
-  it('returns nulls without a baseline', () => {
+  it('returns nulls without a last-done point', () => {
     expect(computeDue(base)).toEqual({ nextDueDate: null, nextDueMiles: null })
   })
   it('computes both dimensions when both are known', () => {
-    expect(computeDue({ ...base, baselineDate: '2026-08-01', baselineOdometer: 61000 })).toEqual({
+    expect(computeDue({ ...base, lastDoneDate: '2026-08-01', lastDoneOdometer: 61000 })).toEqual({
       nextDueDate: '2027-08-01',
       nextDueMiles: 71000,
     })
@@ -52,10 +59,60 @@ describe('computeDue', () => {
       computeDue({
         ...base,
         intervalMonths: null,
-        baselineDate: '2026-08-01',
-        baselineOdometer: 5,
+        lastDoneDate: '2026-08-01',
+        lastDoneOdometer: 5,
       }),
     ).toEqual({ nextDueDate: null, nextDueMiles: 10005 })
+  })
+})
+
+describe('resolveLastDone', () => {
+  const noBaseline = { baselineDate: null, baselineOdometer: null }
+  const baseline = { baselineDate: '2026-03-01', baselineOdometer: 50000 }
+
+  it('is empty with no baseline and no records', () => {
+    expect(resolveLastDone(noBaseline, [])).toEqual({ lastDoneDate: null, lastDoneOdometer: null })
+  })
+  it('uses the baseline alone', () => {
+    expect(resolveLastDone(baseline, [])).toEqual({
+      lastDoneDate: '2026-03-01',
+      lastDoneOdometer: 50000,
+    })
+  })
+  it('uses records alone, newest date and highest odometer in any order', () => {
+    const records = [
+      { date: '2026-09-01', odometer: 58000 },
+      { date: '2026-01-15', odometer: 49000 },
+    ]
+    expect(resolveLastDone(noBaseline, records)).toEqual({
+      lastDoneDate: '2026-09-01',
+      lastDoneOdometer: 58000,
+    })
+  })
+  it('prefers a newer record over the baseline', () => {
+    expect(resolveLastDone(baseline, [{ date: '2026-06-01', odometer: 54000 }])).toEqual({
+      lastDoneDate: '2026-06-01',
+      lastDoneOdometer: 54000,
+    })
+  })
+  it('keeps a newer baseline over an older record', () => {
+    expect(resolveLastDone(baseline, [{ date: '2025-12-01', odometer: 47000 }])).toEqual({
+      lastDoneDate: '2026-03-01',
+      lastDoneOdometer: 50000,
+    })
+  })
+  it('advances only the date for a record without an odometer', () => {
+    expect(resolveLastDone(baseline, [{ date: '2026-06-01', odometer: null }])).toEqual({
+      lastDoneDate: '2026-06-01',
+      lastDoneOdometer: 50000,
+    })
+  })
+  it('combines a date-only baseline with a record odometer', () => {
+    expect(
+      resolveLastDone({ baselineDate: '2026-08-01', baselineOdometer: null }, [
+        { date: '2026-05-01', odometer: 52000 },
+      ]),
+    ).toEqual({ lastDoneDate: '2026-08-01', lastDoneOdometer: 52000 })
   })
 })
 

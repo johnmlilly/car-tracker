@@ -1,7 +1,7 @@
 import { formatDate, formatMiles } from '../shared/format'
 import type { Reading } from '../shared/mileage'
 import { isIsoDate } from '../shared/schedule'
-import { MAX_ODOMETER } from './baseline'
+import { MILES_MESSAGE, parseMiles } from './validate'
 
 export type OdometerParseResult =
   { ok: true; value: Reading } | { ok: false; fields: Record<string, string> }
@@ -20,14 +20,7 @@ export function parseOdometerInput(body: unknown, today: string): OdometerParseR
     fields.date = "Date can't be in the future."
   }
 
-  if (
-    typeof odometer !== 'number' ||
-    !Number.isInteger(odometer) ||
-    odometer < 0 ||
-    odometer > MAX_ODOMETER
-  ) {
-    fields.odometer = `Enter whole miles from 0 to ${MAX_ODOMETER.toLocaleString('en-US')}.`
-  }
+  if (typeof parseMiles(odometer) !== 'number') fields.odometer = MILES_MESSAGE
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
   return { ok: true, value: { date: date as string, odometer: odometer as number } }

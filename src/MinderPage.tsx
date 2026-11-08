@@ -1,80 +1,24 @@
-import { useState } from 'react'
 import type { MinderLogView, MinderResponse } from '../shared/api'
-import { apiRequest, useApi } from './api'
-import { ErrorPanel, LoadingMessage } from './Feedback'
+import { ConfirmDelete } from './ConfirmDelete'
 import { formatDate, formatMiles } from './format'
-import { Link } from './Link'
 import { MileageText } from './MileageText'
 import { MinderForm } from './MinderForm'
-import { buttonClass, errorTextClass } from './styles'
+import { PageShell } from './PageShell'
 
 function LogRow({ log, onDeleted }: { log: MinderLogView; onDeleted: () => void }) {
-  const [confirming, setConfirming] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const label = `code ${log.code} on ${formatDate(log.date)}`
-
-  async function remove() {
-    setDeleting(true)
-    setError(null)
-    try {
-      await apiRequest<void>(`/api/minder-logs/${log.id}`, { method: 'DELETE' })
-      onDeleted()
-    } catch (err) {
-      console.error(err)
-      setError("Couldn't delete. Try again.")
-      setDeleting(false)
-    }
-  }
-
   return (
-    <li className="py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-medium">{log.code}</p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {formatDate(log.date)}
-            {log.odometer !== null && ` at ${formatMiles(log.odometer)}`}
-          </p>
-          <p className="mt-1 text-sm">{log.services.join(', ')}</p>
-        </div>
-        {confirming ? (
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={() => void remove()}
-              disabled={deleting}
-              className={`${buttonClass} bg-red-700 text-white dark:bg-red-400 dark:text-zinc-950`}
-              aria-label={`Confirm delete ${label}`}
-            >
-              {deleting ? 'Deleting...' : 'Confirm delete'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              disabled={deleting}
-              className={`${buttonClass} border border-zinc-300 dark:border-zinc-700`}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="shrink-0 text-sm font-medium text-red-700 underline underline-offset-2 dark:text-red-300"
-            aria-label={`Delete ${label}`}
-          >
-            Delete
-          </button>
-        )}
-      </div>
-      {error && (
-        <p role="alert" className={`mt-1 ${errorTextClass}`}>
-          {error}
-        </p>
-      )}
-    </li>
+    <ConfirmDelete
+      url={`/api/minder-logs/${log.id}`}
+      label={`code ${log.code} on ${formatDate(log.date)}`}
+      onDeleted={onDeleted}
+    >
+      <p className="font-medium">{log.code}</p>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        {formatDate(log.date)}
+        {log.odometer !== null && ` at ${formatMiles(log.odometer)}`}
+      </p>
+      <p className="mt-1 text-sm">{log.services.join(', ')}</p>
+    </ConfirmDelete>
   )
 }
 
@@ -102,29 +46,14 @@ function MinderContent({ data, onChange }: { data: MinderResponse; onChange: () 
 }
 
 export function MinderPage({ id }: { id: number }) {
-  const { state, retry, refresh } = useApi<MinderResponse>(`/api/vehicles/${id}/minder`)
-
   return (
-    <>
-      <Link
-        href="/"
-        className="mb-4 inline-block text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-      >
-        ← All vehicles
-      </Link>
-      {state.status === 'loading' && <LoadingMessage>Loading Minder codes...</LoadingMessage>}
-      {state.status === 'error' && (
-        <ErrorPanel message="Couldn't load Minder codes." onRetry={retry} />
-      )}
-      {state.status === 'notFound' && (
-        <>
-          <h1 className="mb-2 text-2xl font-semibold">Vehicle not found</h1>
-          <p className="text-zinc-500 dark:text-zinc-400">
-            There's no Maintenance Minder vehicle at this address.
-          </p>
-        </>
-      )}
-      {state.status === 'ready' && <MinderContent data={state.data} onChange={refresh} />}
-    </>
+    <PageShell<MinderResponse>
+      url={`/api/vehicles/${id}/minder`}
+      loadingText="Loading Minder codes..."
+      errorText="Couldn't load Minder codes."
+      notFoundText="There's no Maintenance Minder vehicle at this address."
+    >
+      {(data, refresh) => <MinderContent data={data} onChange={refresh} />}
+    </PageShell>
   )
 }

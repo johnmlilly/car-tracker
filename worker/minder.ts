@@ -1,6 +1,6 @@
 import type { DueItemView, ScheduleItemView } from '../shared/api'
 import { todayInEastern } from '../shared/schedule'
-import { MAX_ODOMETER } from './baseline'
+import { MILES_MESSAGE, parseMiles } from './validate'
 
 export interface MinderInput {
   code: string
@@ -40,22 +40,11 @@ export function parseMinderInput(body: unknown): MinderParseResult {
   const normalized = typeof code === 'string' ? normalizeCode(code) : null
   if (normalized === null) fields.code = CODE_MESSAGE
 
-  if (
-    odometer !== undefined &&
-    odometer !== null &&
-    (typeof odometer !== 'number' ||
-      !Number.isInteger(odometer) ||
-      odometer < 0 ||
-      odometer > MAX_ODOMETER)
-  ) {
-    fields.odometer = `Enter whole miles from 0 to ${MAX_ODOMETER.toLocaleString('en-US')}.`
-  }
+  const miles = parseMiles(odometer)
+  if (miles === undefined) fields.odometer = MILES_MESSAGE
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
-  return {
-    ok: true,
-    value: { code: normalized as string, odometer: (odometer as number | null | undefined) ?? null },
-  }
+  return { ok: true, value: { code: normalized as string, odometer: miles as number | null } }
 }
 
 /** Maps a normalized code to the distinct service ids it opens. */

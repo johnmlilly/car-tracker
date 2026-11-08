@@ -17,6 +17,9 @@ export interface ScheduleItemView {
   intervalMonths: number | null
   baselineDate: string | null
   baselineOdometer: number | null
+  /** Newer of the baseline and confirmed service records, per dimension. */
+  lastDoneDate: string | null
+  lastDoneOdometer: number | null
   nextDueDate: string | null
   nextDueMiles: number | null
   status: ItemStatus
@@ -67,6 +70,49 @@ export interface VehiclesResponse {
 
 export interface ErrorResponse {
   error: { message: string; fields?: Record<string, string> }
+}
+
+export interface ServiceItemInput {
+  description: string
+  serviceId: number | null
+  amountCents: number | null
+}
+
+export interface ServiceRecordInput {
+  date: string
+  odometer: number | null
+  shop: string | null
+  totalCents: number | null
+  items: ServiceItemInput[]
+}
+
+export interface ServiceItemView {
+  id: number
+  description: string
+  serviceId: number | null
+  /** Null when the line isn't matched to a tracked service. */
+  serviceName: string | null
+  amountCents: number | null
+}
+
+export interface ServiceRecordView {
+  id: number
+  date: string
+  odometer: number | null
+  shop: string | null
+  totalCents: number | null
+  source: 'manual' | 'receipt' | 'import'
+  /** In entry order. */
+  items: ServiceItemView[]
+}
+
+export interface ServiceRecordsResponse {
+  vehicle: { id: number; name: string }
+  today: string
+  /** Every tracked service, by name. */
+  services: { id: number; name: string }[]
+  /** Newest first. */
+  records: ServiceRecordView[]
 }
 
 export interface MileageSummary {

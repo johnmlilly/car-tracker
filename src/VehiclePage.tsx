@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import type { DueItemView, ScheduleItemView, VehicleDetailResponse } from '../shared/api'
-import { useApi } from './api'
 import { BaselineForm } from './BaselineForm'
-import { ErrorPanel, LoadingMessage } from './Feedback'
 import { formatDate, formatInterval, formatPoint } from './format'
 import { Link } from './Link'
 import { MileageText } from './MileageText'
+import { PageShell } from './PageShell'
 import { StatusBadge } from './StatusBadge'
 
 interface RowProps {
@@ -17,7 +16,8 @@ interface RowProps {
 function ScheduleItemRow({ item, today, onSaved }: RowProps) {
   const [editing, setEditing] = useState(false)
   const hasBaseline = item.baselineDate !== null || item.baselineOdometer !== null
-  const lastDone = formatPoint(item.baselineDate, item.baselineOdometer, 'at')
+  const hasLastDone = item.lastDoneDate !== null || item.lastDoneOdometer !== null
+  const lastDone = formatPoint(item.lastDoneDate, item.lastDoneOdometer, 'at')
   const nextDue = formatPoint(item.nextDueDate, item.nextDueMiles)
 
   return (
@@ -34,7 +34,7 @@ function ScheduleItemRow({ item, today, onSaved }: RowProps) {
             </p>
           )}
         </div>
-        <StatusBadge status={item.status} hasBaseline={hasBaseline} />
+        <StatusBadge status={item.status} hasBaseline={hasLastDone} />
       </div>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
         <dt className="text-zinc-500 dark:text-zinc-400">Last done</dt>
@@ -122,33 +122,25 @@ function VehicleItems({ data, onSaved }: { data: VehicleDetailResponse; onSaved:
 }
 
 export function VehiclePage({ id }: { id: number }) {
-  const { state, retry, refresh } = useApi<VehicleDetailResponse>(`/api/vehicles/${id}`)
-
   return (
-    <>
-      <Link
-        href="/"
-        className="mb-4 inline-block text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-      >
-        ← All vehicles
-      </Link>
-      {state.status === 'loading' && <LoadingMessage>Loading schedule...</LoadingMessage>}
-      {state.status === 'error' && (
-        <ErrorPanel message="Couldn't load this vehicle." onRetry={retry} />
-      )}
-      {state.status === 'notFound' && (
+    <PageShell<VehicleDetailResponse>
+      url={`/api/vehicles/${id}`}
+      loadingText="Loading schedule..."
+      errorText="Couldn't load this vehicle."
+    >
+      {(data, refresh) => (
         <>
-          <h1 className="mb-2 text-2xl font-semibold">Vehicle not found</h1>
-          <p className="text-zinc-500 dark:text-zinc-400">There's no vehicle at this address.</p>
-        </>
-      )}
-      {state.status === 'ready' && (
-        <>
-          <h1 className="mb-1 text-2xl font-semibold">{state.data.vehicle.name}</h1>
+          <h1 className="mb-1 text-2xl font-semibold">{data.vehicle.name}</h1>
           <div className="mb-6 flex items-end justify-between gap-3">
-            <MileageText mileage={state.data.vehicle.mileage} />
+            <MileageText mileage={data.vehicle.mileage} />
             <div className="flex shrink-0 flex-col items-end gap-1">
-              {state.data.vehicle.scheduleModel === 'minder' && (
+              <Link
+                href={`/vehicles/${id}/services`}
+                className="text-sm font-medium underline underline-offset-2"
+              >
+                Add service
+              </Link>
+              {data.vehicle.scheduleModel === 'minder' && (
                 <Link
                   href={`/vehicles/${id}/minder`}
                   className="text-sm font-medium underline underline-offset-2"
@@ -164,9 +156,9 @@ export function VehiclePage({ id }: { id: number }) {
               </Link>
             </div>
           </div>
-          <VehicleItems data={state.data} onSaved={refresh} />
+          <VehicleItems data={data} onSaved={refresh} />
         </>
       )}
-    </>
+    </PageShell>
   )
 }
