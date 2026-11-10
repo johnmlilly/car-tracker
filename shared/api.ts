@@ -135,3 +135,22 @@ export interface OdometerResponse {
   /** Newest first. */
   readings: OdometerReading[]
 }
+
+/** Largest receipt file the API accepts (10 MiB). */
+export const MAX_RECEIPT_BYTES = 10 * 1024 * 1024
+
+export type ReceiptContentType = 'image/jpeg' | 'application/pdf'
+
+export type ReceiptStatus = 'pending' | 'review' | 'confirmed'
+
+export interface ReceiptView {
+  id: number
+  vehicle: { id: number; name: string } | null
+  contentType: ReceiptContentType
+  status: ReceiptStatus
+  uploadedAt: string
+}
+
+export interface ReceiptsResponse {
+  receipts: ReceiptView[]
+}

@@ -131,3 +131,16 @@ export const serviceItems = sqliteTable(
   },
   (t) => [index('service_items_service_record_id_idx').on(t.serviceRecordId)],
 )
+
+export const receipts = sqliteTable('receipts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  vehicleId: integer('vehicle_id').references(() => vehicles.id),
+  r2Key: text('r2_key').notNull().unique(),
+  contentType: text('content_type', { enum: ['image/jpeg', 'application/pdf'] }).notNull(),
+  status: text('status', { enum: ['pending', 'review', 'confirmed'] })
+    .notNull()
+    .default('pending'),
+  extraction: text('extraction'),
+  importBatchId: text('import_batch_id'),
+  uploadedAt: text('uploaded_at').notNull(),
+})

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { ErrorResponse } from '../shared/api'
 import { minderRoutes } from './routes/minder'
 import { odometerRoutes } from './routes/odometer'
+import { receiptRoutes } from './routes/receipts'
 import { serviceRecordRoutes } from './routes/serviceRecords'
 import { vehicleRoutes } from './routes/vehicles'
 
@@ -13,6 +14,7 @@ app.route('/', vehicleRoutes)
 app.route('/', odometerRoutes)
 app.route('/', minderRoutes)
 app.route('/', serviceRecordRoutes)
+app.route('/', receiptRoutes)
 
 app.notFound((c) => c.json<ErrorResponse>({ error: { message: 'Not found' } }, 404))
 

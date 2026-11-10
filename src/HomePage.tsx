@@ -3,6 +3,7 @@ import { useApi } from './api'
 import { ErrorPanel, LoadingMessage } from './Feedback'
 import { Link } from './Link'
 import { MileageText } from './MileageText'
+import { primaryButtonClass } from './styles'
 
 const SCHEDULE_LABELS: Record<Vehicle['scheduleModel'], string> = {
   minder: 'Interval schedule + Maintenance Minder',
@@ -92,6 +93,14 @@ export function HomePage() {
           ))}
         </ul>
       )}
+      <div className="sticky bottom-0 -mx-4 mt-6 grid gap-2 bg-white/95 px-4 pt-3 pb-4 text-center dark:bg-zinc-950/95">
+        <Link href="/receipts/new" className={`${primaryButtonClass} block py-3 text-base`}>
+          Add receipt
+        </Link>
+        <Link href="/receipts" className="text-sm font-medium underline underline-offset-2">
+          Receipts
+        </Link>
+      </div>
     </>
   )
 }

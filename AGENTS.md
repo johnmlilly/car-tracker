@@ -89,7 +89,9 @@ Package manager: npm (`package-lock.json`).
 - Build: `npm run build` (runs `tsc -b` typecheck, then builds the client and Worker into `dist/`)
 - Preview built app: `npm run preview`
 - Lint: `npm run lint` (ESLint)
-- Test: `npm test` (Vitest, runs once; fails if no tests are found)
+- Test: `npm test` (Vitest, runs once; fails if no tests are found). Includes
+  `*.d1.test.ts` route tests against in-memory local D1 and R2 via wrangler's
+  `getPlatformProxy` (`worker/test/platform.ts`); no network needed.
 - Test watch: `npm run test:watch`
 - Generate a migration from `worker/db/schema.ts`: `npm run db:generate`
 - Apply migrations to local D1: `npm run db:migrate:local` (run once before first `npm run dev`)
@@ -106,11 +108,15 @@ typecheck.
 1. `npx wrangler login`
 2. `npx wrangler d1 create car-tracker`, then copy the printed `database_id` into
    `wrangler.jsonc` (replacing the all-zero placeholder).
-3. `npm run db:migrate:remote`
-4. `npm run deploy`
-5. In the Cloudflare dashboard, enable Cloudflare Access for the Worker's
+3. `npx wrangler r2 bucket create car-tracker-receipts`
+4. `npm run db:migrate:remote`
+5. `npm run deploy`
+6. In the Cloudflare dashboard, enable Cloudflare Access for the Worker's
    `workers.dev` route and restrict it to your own email. Keep the app behind
    Access; it has no in-app login.
+
+An existing deployment that predates receipts (feature 6) needs step 3, then
+`npm run db:migrate:remote`, before its next `npm run deploy`.
 
 Testing is opt-in. If this project does not already have a unit test runner, run
 `/tests` or `$tests` to add one and update this section with the real test

@@ -19,7 +19,13 @@ describe('matchRoute', () => {
     expect(matchRoute('/vehicles/2/services')).toEqual({ name: 'services', id: 2 })
     expect(matchRoute('/vehicles/2/services/')).toEqual({ name: 'services', id: 2 })
   })
-  it.each(['/vehicles/0/services', '/vehicles/2/services/x', '/vehicles/0/minder', '/vehicles/1/minder/x', '/vehicles/0', '/vehicles/abc', '/vehicles', '/nope', '/vehicles/0/odometer', '/vehicles/1/odometer/x'])('rejects %s', (path) => {
+  it('matches the receipt routes', () => {
+    expect(matchRoute('/receipts')).toEqual({ name: 'receipts' })
+    expect(matchRoute('/receipts/')).toEqual({ name: 'receipts' })
+    expect(matchRoute('/receipts/new')).toEqual({ name: 'receiptNew' })
+    expect(matchRoute('/receipts/new/')).toEqual({ name: 'receiptNew' })
+  })
+  it.each(['/receipts/1', '/receipts/new/x', '/receiptsx', '/vehicles/0/services', '/vehicles/2/services/x', '/vehicles/0/minder', '/vehicles/1/minder/x', '/vehicles/0', '/vehicles/abc', '/vehicles', '/nope', '/vehicles/0/odometer', '/vehicles/1/odometer/x'])('rejects %s', (path) => {
     expect(matchRoute(path)).toEqual({ name: 'notFound' })
   })
 })

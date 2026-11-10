@@ -16,7 +16,7 @@ Do not renumber completed features; their archived specs refer to these IDs.
 
 ### Milestone 2 - Receipts
 
-- [ ] 6. **Receipt upload** - camera or file capture, client-side resize, stored in R2
+- [x] 6. **Receipt upload** - camera or file capture, client-side resize, stored in R2
 - [ ] 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword mapping to services, side-by-side review, Minder code mismatch flag
 - [ ] 8. **Bulk import** - upload many past receipts and confirm them from a quick-review list; historical Minder codes record history only
 

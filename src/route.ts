@@ -6,10 +6,14 @@ export type Route =
   | { name: 'odometer'; id: number }
   | { name: 'minder'; id: number }
   | { name: 'services'; id: number }
+  | { name: 'receipts' }
+  | { name: 'receiptNew' }
   | { name: 'notFound' }
 
 export function matchRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { name: 'home' }
+  if (/^\/receipts\/?$/.test(pathname)) return { name: 'receipts' }
+  if (/^\/receipts\/new\/?$/.test(pathname)) return { name: 'receiptNew' }
   const vehicle = /^\/vehicles\/([1-9]\d{0,9})\/?$/.exec(pathname)
   if (vehicle) return { name: 'vehicle', id: Number(vehicle[1]) }
   const odometer = /^\/vehicles\/([1-9]\d{0,9})\/odometer\/?$/.exec(pathname)
@@ -21,9 +25,10 @@ export function matchRoute(pathname: string): Route {
   return { name: 'notFound' }
 }
 
-export function navigate(to: string) {
+/** `state` rides on the history entry, e.g. a one-time status message. */
+export function navigate(to: string, state: unknown = null) {
   if (to === window.location.pathname) return
-  window.history.pushState(null, '', to)
+  window.history.pushState(state, '', to)
   window.dispatchEvent(new PopStateEvent('popstate'))
   window.scrollTo(0, 0)
 }

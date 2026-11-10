@@ -1,0 +1,184 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ReceiptView, ReceiptsResponse } from '../../shared/api'
+import app from '../index'
+import { FILE_MESSAGES, VEHICLE_MESSAGE } from '../receipt'
+import { startPlatform } from '../test/platform'
+
+let env: Env
+let dispose: () => Promise<void>
+
+beforeEach(async () => {
+  ;({ env, dispose } = await startPlatform())
+})
+
+afterEach(async () => {
+  await dispose()
+})
+
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4])
+const PDF = new TextEncoder().encode('%PDF-1.7\nfake')
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+
+async function vehicleId(name: string): Promise<number> {
+  const row = await env.DB.prepare('SELECT id FROM vehicles WHERE name = ?')
+    .bind(name)
+    .first<{ id: number }>()
+  return row!.id
+}
+
+function upload(fields: { vehicleId?: string; file?: Uint8Array; type?: string }) {
+  const form = new FormData()
+  if (fields.vehicleId !== undefined) form.set('vehicleId', fields.vehicleId)
+  if (fields.file) {
+    form.set('file', new File([fields.file], 'receipt', { type: fields.type ?? 'image/jpeg' }))
+  }
+  return app.request('/api/receipts', { method: 'POST', body: form }, env)
+}
+
+async function rows() {
+  const { results } = await env.DB.prepare(
+    'SELECT id, r2_key AS r2Key, content_type AS contentType, status FROM receipts ORDER BY id',
+  ).all<{ id: number; r2Key: string; contentType: string; status: string }>()
+  return results
+}
+
+async function fieldsOf(res: Response) {
+  return ((await res.json()) as { error: { fields: Record<string, string> } }).error.fields
+}
+
+describe('receipt routes against D1 and R2', () => {
+  it('stores a JPEG and a PDF as pending receipts', async () => {
+    const corolla = await vehicleId('2019 Toyota Corolla')
+
+    const jpegRes = await upload({ vehicleId: String(corolla), file: JPEG })
+    expect(jpegRes.status).toBe(201)
+    const jpeg = (await jpegRes.json()) as ReceiptView
+    expect(jpeg).toMatchObject({
+      vehicle: { id: corolla, name: '2019 Toyota Corolla' },
+      contentType: 'image/jpeg',
+      status: 'pending',
+    })
+
+    const pdfRes = await upload({ vehicleId: String(corolla), file: PDF, type: 'text/plain' })
+    expect(pdfRes.status).toBe(201)
+
+    const stored = await rows()
+    expect(stored.map((r) => [r.contentType, r.status])).toEqual([
+      ['image/jpeg', 'pending'],
+      ['application/pdf', 'pending'],
+    ])
+    expect(stored[0].r2Key).toMatch(/^receipts\/[0-9a-f-]{36}\.jpg$/)
+    expect(stored[1].r2Key).toMatch(/\.pdf$/)
+
+    const object = await env.RECEIPTS.get(stored[1].r2Key)
+    expect(object?.httpMetadata?.contentType).toBe('application/pdf')
+    expect(new Uint8Array(await object!.arrayBuffer())).toEqual(PDF)
+  })
+
+  it('rejects bytes that are not JPEG or PDF and stores nothing', async () => {
+    const res = await upload({ vehicleId: '1', file: PNG, type: 'image/jpeg' })
+    expect(res.status).toBe(400)
+    expect(await fieldsOf(res)).toEqual({ file: FILE_MESSAGES.type })
+    expect(await rows()).toEqual([])
+    expect((await env.RECEIPTS.list()).objects).toEqual([])
+  })
+
+  it.each([undefined, 'x', '999'])('rejects vehicleId %s and stores nothing', async (id) => {
+    const res = await upload({ vehicleId: id, file: JPEG })
+    expect(res.status).toBe(400)
+    expect(await fieldsOf(res)).toEqual({ vehicleId: VEHICLE_MESSAGE })
+    expect((await env.RECEIPTS.list()).objects).toEqual([])
+  })
+
+  it('rejects a non-multipart body', async () => {
+    const res = await app.request(
+      '/api/receipts',
+      { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } },
+      env,
+    )
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects an oversized body by Content-Length before reading it', async () => {
+    const res = await app.request(
+      '/api/receipts',
+      { method: 'POST', body: 'x', headers: { 'Content-Length': String(11 * 1024 * 1024) } },
+      env,
+    )
+    expect(res.status).toBe(413)
+    expect(await res.json()).toEqual({ error: { message: FILE_MESSAGES.size } })
+  })
+
+  it('lists receipts newest first with vehicle names', async () => {
+    const odyssey = await vehicleId('2024 Honda Odyssey')
+    const corolla = await vehicleId('2019 Toyota Corolla')
+    await upload({ vehicleId: String(odyssey), file: JPEG })
+    await upload({ vehicleId: String(corolla), file: PDF })
+    await env.DB.prepare(
+      "INSERT INTO receipts (r2_key, content_type, uploaded_at) VALUES ('receipts/old.jpg', 'image/jpeg', '2020-01-01T00:00:00.000Z')",
+    ).run()
+
+    const res = await app.request('/api/receipts', {}, env)
+    expect(res.status).toBe(200)
+    const { receipts } = (await res.json()) as ReceiptsResponse
+    expect(receipts.map((r) => r.vehicle?.name ?? null)).toEqual([
+      '2019 Toyota Corolla',
+      '2024 Honda Odyssey',
+      null,
+    ])
+  })
+
+  it('serves the stored file with protective headers', async () => {
+    const created = (await (await upload({ vehicleId: '1', file: PDF })).json()) as ReceiptView
+
+    const res = await app.request(`/api/receipts/${created.id}/file`, {}, env)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('application/pdf')
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff')
+    expect(res.headers.get('Content-Security-Policy')).toBe('sandbox')
+    expect(res.headers.get('Content-Disposition')).toBe('inline')
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(PDF)
+  })
+
+  it('returns 404 for a file whose row or object is missing', async () => {
+    const created = (await (await upload({ vehicleId: '1', file: JPEG })).json()) as ReceiptView
+    const [{ r2Key }] = await rows()
+    await env.RECEIPTS.delete(r2Key)
+
+    for (const path of [`/api/receipts/${created.id}/file`, '/api/receipts/999/file', '/api/receipts/x/file']) {
+      const res = await app.request(path, {}, env)
+      expect(res.status).toBe(404)
+      expect(await res.json()).toEqual({ error: { message: 'Receipt not found' } })
+    }
+  })
+
+  it('deletes a pending receipt and its object', async () => {
+    const created = (await (await upload({ vehicleId: '1', file: JPEG })).json()) as ReceiptView
+
+    const res = await app.request(`/api/receipts/${created.id}`, { method: 'DELETE' }, env)
+    expect(res.status).toBe(204)
+    expect(await rows()).toEqual([])
+    expect((await env.RECEIPTS.list()).objects).toEqual([])
+
+    const again = await app.request(`/api/receipts/${created.id}`, { method: 'DELETE' }, env)
+    expect(again.status).toBe(404)
+  })
+
+  it('refuses to delete a receipt that is past pending', async () => {
+    const created = (await (await upload({ vehicleId: '1', file: JPEG })).json()) as ReceiptView
+    await env.DB.prepare("UPDATE receipts SET status = 'review'").run()
+
+    const res = await app.request(`/api/receipts/${created.id}`, { method: 'DELETE' }, env)
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({
+      error: { message: 'Only receipts waiting for reading can be deleted.' },
+    })
+    expect(await rows()).toHaveLength(1)
+    expect((await env.RECEIPTS.list()).objects).toHaveLength(1)
+  })
+
+  it('returns 404 when deleting an invalid id', async () => {
+    const res = await app.request('/api/receipts/0', { method: 'DELETE' }, env)
+    expect(res.status).toBe(404)
+  })
+})

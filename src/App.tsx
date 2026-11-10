@@ -1,6 +1,8 @@
 import { HomePage } from './HomePage'
 import { Link } from './Link'
 import { OdometerPage } from './OdometerPage'
+import { ReceiptsPage } from './ReceiptsPage'
+import { ReceiptUploadPage } from './ReceiptUploadPage'
 import { MinderPage } from './MinderPage'
 import { matchRoute, usePathname } from './route'
 import { ServicesPage } from './ServicesPage'
@@ -28,6 +30,8 @@ function App() {
         {route.name === 'odometer' && <OdometerPage key={route.id} id={route.id} />}
         {route.name === 'minder' && <MinderPage key={route.id} id={route.id} />}
         {route.name === 'services' && <ServicesPage key={route.id} id={route.id} />}
+        {route.name === 'receipts' && <ReceiptsPage />}
+        {route.name === 'receiptNew' && <ReceiptUploadPage />}
         {route.name === 'notFound' && <NotFoundPage />}
       </main>
     </div>

@@ -43,6 +43,13 @@
       "when": 1794103864627,
       "tag": "0005_service_records",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794277562188,
+      "tag": "0006_receipts",
+      "breakpoints": true
     }
   ]
 }
