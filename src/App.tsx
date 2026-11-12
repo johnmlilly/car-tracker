@@ -1,6 +1,7 @@
 import { HomePage } from './HomePage'
 import { Link } from './Link'
 import { OdometerPage } from './OdometerPage'
+import { ReceiptReviewPage } from './ReceiptReviewPage'
 import { ReceiptsPage } from './ReceiptsPage'
 import { ReceiptUploadPage } from './ReceiptUploadPage'
 import { MinderPage } from './MinderPage'
@@ -24,7 +25,10 @@ function App() {
 
   return (
     <div className="min-h-svh bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-      <main className="mx-auto max-w-xl px-4 py-6">
+      {/* Review puts the receipt beside the form, so it gets a wider column. */}
+      <main
+        className={`mx-auto px-4 py-6 ${route.name === 'receiptReview' ? 'max-w-5xl' : 'max-w-xl'}`}
+      >
         {route.name === 'home' && <HomePage />}
         {route.name === 'vehicle' && <VehiclePage key={route.id} id={route.id} />}
         {route.name === 'odometer' && <OdometerPage key={route.id} id={route.id} />}
@@ -32,6 +36,7 @@ function App() {
         {route.name === 'services' && <ServicesPage key={route.id} id={route.id} />}
         {route.name === 'receipts' && <ReceiptsPage />}
         {route.name === 'receiptNew' && <ReceiptUploadPage />}
+        {route.name === 'receiptReview' && <ReceiptReviewPage key={route.id} id={route.id} />}
         {route.name === 'notFound' && <NotFoundPage />}
       </main>
     </div>

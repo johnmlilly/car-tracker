@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import {
@@ -10,11 +10,14 @@ import {
   type ReceiptsResponse,
 } from '../../shared/api'
 import { todayInEastern } from '../../shared/schedule'
-import { receipts, services, vehicles } from '../db/schema'
+import { dueItems, minderLogs, receipts, services, vehicles } from '../db/schema'
 import { createClient, extractReceipt } from '../extract'
 import { type Db, findVehicle, notFound, parseId } from '../http'
+import { normalizeCode } from '../minder'
 import { FILE_MESSAGES, parseReceiptUpload, VEHICLE_MESSAGE } from '../receipt'
 import { ExtractError, matchService, parseExtraction } from '../receiptExtraction'
+import { parseServiceRecordInput } from '../serviceRecord'
+import { prepareServiceRecordInsert } from '../serviceRecordWrite'
 
 export const receiptRoutes = new Hono<{ Bindings: Env }>()
 
@@ -26,6 +29,36 @@ const EXTENSIONS = { 'image/webp': 'webp', 'application/pdf': 'pdf' } as const
 const RECEIPT_NOT_FOUND = 'Receipt not found'
 const ALREADY_READ = 'This receipt has already been read.'
 const READ_FAILED = "Couldn't read this receipt. Try again."
+const NOT_CONFIRMABLE = "This receipt isn't ready to confirm."
+const CODE_MESSAGE = 'Enter a code like A or B12.'
+
+/** Code of the newest Minder log for the vehicle that still has an open due item. */
+async function openMinderCode(db: Db, vehicleId: number): Promise<string | null> {
+  const [row] = await db
+    .select({ code: minderLogs.code })
+    .from(minderLogs)
+    .innerJoin(dueItems, eq(dueItems.minderLogId, minderLogs.id))
+    .where(and(eq(minderLogs.vehicleId, vehicleId), isNull(dueItems.closedByServiceItemId)))
+    .orderBy(desc(minderLogs.loggedAt), desc(minderLogs.id))
+    .limit(1)
+  return row?.code ?? null
+}
+
+/** True when `err`, or an error it wraps, is a SQLite unique-constraint failure. */
+function isUniqueViolation(err: unknown): boolean {
+  for (let e = err; e instanceof Error; e = e.cause) {
+    if (e.message.includes('UNIQUE constraint failed')) return true
+  }
+  return false
+}
+
+async function vehicleModel(db: Db, vehicleId: number) {
+  const [row] = await db
+    .select({ scheduleModel: vehicles.scheduleModel })
+    .from(vehicles)
+    .where(eq(vehicles.id, vehicleId))
+  return row?.scheduleModel ?? null
+}
 
 function selectReceipts(db: Db) {
   return db
@@ -111,13 +144,16 @@ receiptRoutes.get('/receipts/:id', async (c) => {
     .from(receipts)
     .where(eq(receipts.id, id))
 
+  const serviceList = await db
+    .select({ id: services.id, name: services.name, keywords: services.keywords })
+    .from(services)
+    .orderBy(asc(services.name))
+  const scheduleModel = row.vehicleId === null ? null : await vehicleModel(db, row.vehicleId)
+
   let extraction: ReceiptDetail['extraction'] = null
   if (stored !== null) {
     // Written only by the read route, after parseExtraction validated it.
     const parsed = JSON.parse(stored) as ReceiptExtraction
-    const serviceList = await db
-      .select({ id: services.id, keywords: services.keywords })
-      .from(services)
     extraction = {
       ...parsed,
       lineItems: parsed.lineItems.map((line) => ({
@@ -126,7 +162,17 @@ receiptRoutes.get('/receipts/:id', async (c) => {
       })),
     }
   }
-  return c.json<ReceiptDetail>({ ...toView(row), extraction })
+  return c.json<ReceiptDetail>({
+    ...toView(row),
+    today: todayInEastern(new Date()),
+    scheduleModel,
+    services: serviceList.map(({ id: serviceId, name }) => ({ id: serviceId, name })),
+    openMinderCode:
+      scheduleModel === 'minder' && row.vehicleId !== null
+        ? await openMinderCode(db, row.vehicleId)
+        : null,
+    extraction,
+  })
 })
 
 receiptRoutes.post('/receipts/:id/read', async (c) => {
@@ -171,6 +217,66 @@ receiptRoutes.post('/receipts/:id/read', async (c) => {
   return c.json<ReceiptView>(toView(view))
 })
 
+receiptRoutes.post('/receipts/:id/confirm', async (c) => {
+  const id = parseId(c.req.param('id'))
+  if (id === null) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+
+  const db = drizzle(c.env.DB)
+  const [receipt] = await db
+    .select({ vehicleId: receipts.vehicleId, status: receipts.status })
+    .from(receipts)
+    .where(eq(receipts.id, id))
+  if (!receipt) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+  const notConfirmable = () =>
+    c.json<ErrorResponse>({ error: { message: NOT_CONFIRMABLE } }, 409)
+  if (receipt.status !== 'review' || receipt.vehicleId === null) return notConfirmable()
+  const vehicleId = receipt.vehicleId
+
+  const body: unknown = await c.req.json().catch(() => undefined)
+  const parsed = parseServiceRecordInput(body, todayInEastern(new Date()))
+  const fields = parsed.ok ? {} : { ...parsed.fields }
+  const rawCode =
+    typeof body === 'object' && body !== null ? (body as { minderCode?: unknown }).minderCode : null
+  let minderCode: string | null = null
+  if (rawCode !== null && rawCode !== undefined) {
+    minderCode = typeof rawCode === 'string' ? normalizeCode(rawCode) : null
+    if (minderCode === null) fields.minderCode = CODE_MESSAGE
+  }
+  const invalid = (f: Record<string, string>) =>
+    c.json<ErrorResponse>({ error: { message: 'Invalid service record', fields: f } }, 400)
+  if (!parsed.ok || Object.keys(fields).length > 0) return invalid(fields)
+
+  // Only Minder vehicles keep a Minder code.
+  if ((await vehicleModel(db, vehicleId)) !== 'minder') minderCode = null
+
+  const prepared = await prepareServiceRecordInsert(db, vehicleId, parsed.value, {
+    source: 'receipt',
+    receiptId: id,
+    minderCode,
+  })
+  if (!prepared.ok) return invalid(prepared.fields)
+
+  try {
+    await db.batch([
+      ...prepared.statements,
+      db
+        .update(receipts)
+        .set({ status: 'confirmed' })
+        .where(and(eq(receipts.id, id), eq(receipts.status, 'review'))),
+    ])
+  } catch (err) {
+    // The unique receipt_id index stops a second record for the same receipt;
+    // the batch rolls back as one transaction.
+    if (isUniqueViolation(err)) {
+      return notConfirmable()
+    }
+    throw err
+  }
+
+  const [view] = await selectReceipts(db).where(eq(receipts.id, id))
+  return c.json<ReceiptView>(toView(view), 201)
+})
+
 receiptRoutes.get('/receipts/:id/file', async (c) => {
   const id = parseId(c.req.param('id'))
   if (id === null) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
@@ -185,13 +291,16 @@ receiptRoutes.get('/receipts/:id/file', async (c) => {
   const object = await c.env.RECEIPTS.get(row.r2Key)
   if (!object) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
 
-  // Uploaded bytes are untrusted: never let the browser sniff them into HTML
-  // or run script from them on the app's origin.
+  // Uploaded bytes are untrusted: never let the browser sniff them into HTML,
+  // and sandbox images so nothing runs from them on the app's origin. PDFs skip
+  // the sandbox (owner decision 2026-11-11) because browsers refuse to render a
+  // sandboxed PDF in the review page's iframe; their bytes were checked to start
+  // with %PDF- at upload and nosniff keeps them rendered as PDF.
   return c.body(object.body, 200, {
     'Content-Type': row.contentType,
     'Content-Disposition': 'inline',
     'X-Content-Type-Options': 'nosniff',
-    'Content-Security-Policy': 'sandbox',
+    ...(row.contentType === 'application/pdf' ? {} : { 'Content-Security-Policy': 'sandbox' }),
     'Cache-Control': 'private, max-age=3600',
   })
 })

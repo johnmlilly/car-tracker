@@ -88,6 +88,7 @@ describe('matchService', () => {
     { id: 4, keywords: ['engine air filter', 'air filter'] },
     { id: 5, keywords: ['cabin', 'pollen'] },
     { id: 8, keywords: ['multi-point'] },
+    { id: 9, keywords: ['spark plug'] },
   ]
 
   it.each([
@@ -96,6 +97,10 @@ describe('matchService', () => {
     ['Tire Rotation', 3],
     ['Replace engine air filter', 4],
     ['Multi-Point inspection', 8],
+    ['Replace spark plugs', 9],
+    ['Engine air filters', 4],
+    ['Tire rotations', 3],
+    ['Two oil changes, LOFs', 1],
   ])('matches %s', (description, id) => {
     expect(matchService(description, services)).toBe(id)
   })
@@ -103,6 +108,7 @@ describe('matchService', () => {
   it.each([
     ['no keyword', 'Wiper blades'],
     ['a keyword inside a word', 'Aloft boiler'],
+    ['a keyword with a longer suffix', 'Oily rag'],
     ['two services', 'Cabin air filter'],
     ['two services on one line', 'Oil change and rotation'],
   ])('returns null for %s', (_, description) => {

@@ -1,5 +1,5 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
-import type { ServiceRecordInput, ServiceRecordsResponse } from '../shared/api'
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import type { ServiceRecordInput } from '../shared/api'
 import { parseDollarsToCents } from '../shared/money'
 import { submitJson } from './api'
 import { buttonClass, errorTextClass, inputClass, primaryButtonClass } from './styles'
@@ -12,14 +12,46 @@ interface Line {
   amount: string
 }
 
+export type Fields = Record<string, string | undefined>
+
+/** Starting values for the form, as the user would type them. */
+export interface ServiceFormValues {
+  date: string
+  odometer: string
+  shop: string
+  total: string
+  lines: { serviceId: string; description: string; amount: string }[]
+}
+
+export interface ExtraFieldHelpers {
+  fieldErrors: Fields
+  /** Element id for a field's error message (use it for the message and aria-describedby). */
+  errorId: (key: string) => string
+  /** Call when the user edits an extra field, to clear its error. */
+  clearError: (key: string) => void
+}
+
 interface ServiceFormProps {
   vehicleId: number
   today: string
-  services: ServiceRecordsResponse['services']
+  services: { id: number; name: string }[]
   onSaved: () => void
+  /** Prefill; the manual entry form starts blank. */
+  initial?: ServiceFormValues
+  /** POST target; defaults to the vehicle's service-records endpoint. */
+  submitUrl?: string
+  submitLabel?: string
+  /** Merged into the request body. */
+  extraBody?: Record<string, unknown>
+  /** Extra checks before submit; returns field messages keyed like server fields. */
+  validateExtra?: () => Fields
+  /** Extra fields rendered after the line items. */
+  renderExtra?: (helpers: ExtraFieldHelpers) => ReactNode
+  /** Shown in place of the generic error when the server answers 409. */
+  conflictMessage?: ReactNode
+  /** Clear the form and show "Service saved." after saving (manual entry). */
+  resetOnSave?: boolean
 }
-
-type Fields = Record<string, string | undefined>
 
 const AMOUNT_MESSAGE = 'Enter dollars and cents, like 49.99.'
 
@@ -35,15 +67,32 @@ function ErrorText({ id, message }: { id: string; message: string | undefined })
   )
 }
 
-export function ServiceForm({ vehicleId, today, services, onSaved }: ServiceFormProps) {
+export function ServiceForm({
+  vehicleId,
+  today,
+  services,
+  onSaved,
+  initial,
+  submitUrl = `/api/vehicles/${vehicleId}/service-records`,
+  submitLabel = 'Save service',
+  extraBody,
+  validateExtra,
+  renderExtra,
+  conflictMessage,
+  resetOnSave = true,
+}: ServiceFormProps) {
   const id = useId()
-  const [date, setDate] = useState(today)
-  const [odometer, setOdometer] = useState('')
-  const [shop, setShop] = useState('')
-  const [total, setTotal] = useState('')
-  const [lines, setLines] = useState<Line[]>(() => [newLine()])
+  const [date, setDate] = useState(initial?.date ?? today)
+  const [odometer, setOdometer] = useState(initial?.odometer ?? '')
+  const [shop, setShop] = useState(initial?.shop ?? '')
+  const [total, setTotal] = useState(initial?.total ?? '')
+  const [lines, setLines] = useState<Line[]>(() =>
+    initial && initial.lines.length > 0
+      ? initial.lines.map((line) => ({ ...newLine(), ...line }))
+      : [newLine()],
+  )
   const [fieldErrors, setFieldErrors] = useState<Fields>({})
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<ReactNode>(null)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
@@ -104,24 +153,22 @@ export function ServiceForm({ vehicleId, today, services, onSaved }: ServiceForm
   async function save(body: ServiceRecordInput) {
     setSaving(true)
     setFormError(null)
-    const result = await submitJson<ServiceRecordsResponse>(
-      `/api/vehicles/${vehicleId}/service-records`,
-      'POST',
-      body,
-    )
+    const result = await submitJson<unknown>(submitUrl, 'POST', { ...body, ...extraBody })
     setSaving(false)
     if (result.ok) {
-      setDate(today)
-      setOdometer('')
-      setShop('')
-      setTotal('')
-      setLines([newLine()])
-      setSaved(true)
+      if (resetOnSave) {
+        setDate(today)
+        setOdometer('')
+        setShop('')
+        setTotal('')
+        setLines([newLine()])
+        setSaved(true)
+      }
       onSaved()
     } else if ('fields' in result) {
       setFieldErrors(result.fields)
     } else {
-      setFormError(result.error)
+      setFormError(result.status === 409 && conflictMessage ? conflictMessage : result.error)
     }
   }
 
@@ -155,8 +202,9 @@ export function ServiceForm({ vehicleId, today, services, onSaved }: ServiceForm
       }
     })
 
+    Object.assign(errors, validateExtra?.())
     setFieldErrors(errors)
-    if (Object.keys(errors).length > 0) return
+    if (Object.values(errors).some(Boolean)) return
     void save({
       date,
       odometer: miles === '' ? null : Number(miles),
@@ -366,6 +414,8 @@ export function ServiceForm({ vehicleId, today, services, onSaved }: ServiceForm
         </div>
       </fieldset>
 
+      {renderExtra?.({ fieldErrors, errorId, clearError: (key) => edited(key) })}
+
       {formError && (
         <p role="alert" className={errorTextClass}>
           {formError}
@@ -373,7 +423,7 @@ export function ServiceForm({ vehicleId, today, services, onSaved }: ServiceForm
       )}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving} className={primaryButtonClass}>
-          {saving ? 'Saving...' : 'Save service'}
+          {saving ? 'Saving...' : submitLabel}
         </button>
         <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">
           {saved ? 'Service saved.' : ''}

@@ -172,10 +172,22 @@ export interface ReceiptExtraction {
 }
 
 export interface ReceiptDetail extends ReceiptView {
+  /** YYYY-MM-DD in Eastern time. */
+  today: string
+  /** The receipt vehicle's schedule model; null when the receipt has no vehicle. */
+  scheduleModel: ScheduleModel | null
+  /** Services to pick from at review, by name. */
+  services: { id: number; name: string }[]
+  /** Newest logged Minder code with an open item; null for interval vehicles. */
+  openMinderCode: string | null
   /** Null until the receipt has been read. */
   extraction:
     | (Omit<ReceiptExtraction, 'lineItems'> & {
         lineItems: (ReceiptExtractionLine & { suggestedServiceId: number | null })[]
       })
     | null
+}
+
+export interface ReceiptConfirmInput extends ServiceRecordInput {
+  minderCode: string | null
 }

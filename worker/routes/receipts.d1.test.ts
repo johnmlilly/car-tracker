@@ -142,16 +142,26 @@ describe('receipt routes against D1 and R2', () => {
     ])
   })
 
-  it('serves the stored file with protective headers', async () => {
+  it('serves a stored PDF unsandboxed so it can preview inline', async () => {
     const created = (await (await upload({ vehicleId: '1', file: PDF })).json()) as ReceiptView
 
     const res = await app.request(`/api/receipts/${created.id}/file`, {}, env)
     expect(res.status).toBe(200)
     expect(res.headers.get('Content-Type')).toBe('application/pdf')
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff')
-    expect(res.headers.get('Content-Security-Policy')).toBe('sandbox')
+    expect(res.headers.get('Content-Security-Policy')).toBeNull()
     expect(res.headers.get('Content-Disposition')).toBe('inline')
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(PDF)
+  })
+
+  it('serves a stored image sandboxed', async () => {
+    const created = (await (await upload({ vehicleId: '1', file: WEBP })).json()) as ReceiptView
+
+    const res = await app.request(`/api/receipts/${created.id}/file`, {}, env)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('image/webp')
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff')
+    expect(res.headers.get('Content-Security-Policy')).toBe('sandbox')
   })
 
   it('returns 404 for a file whose row or object is missing', async () => {
@@ -260,6 +270,25 @@ describe('receipt routes against D1 and R2', () => {
       const res = await read(id)
       expect(res.status).toBe(409)
       expect(extract).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the first result when a concurrent read finishes first', async () => {
+      const id = await uploaded()
+      const winner = JSON.stringify({ ...READ, shop: 'First read' })
+      extract.mockImplementation(async () => {
+        // Another read lands while this one waits on Claude.
+        await env.DB.prepare("UPDATE receipts SET status = 'review', extraction = ? WHERE id = ?")
+          .bind(winner, id)
+          .run()
+        return READ
+      })
+
+      const res = await read(id)
+      expect(res.status).toBe(409)
+      const row = await env.DB.prepare('SELECT status, extraction FROM receipts WHERE id = ?')
+        .bind(id)
+        .first<{ status: string; extraction: string }>()
+      expect(row).toEqual({ status: 'review', extraction: winner })
     })
 
     it('leaves the receipt pending when reading fails', async () => {

@@ -7,6 +7,7 @@ interface PageShellProps<T> {
   url: string
   loadingText: string
   errorText: string
+  notFoundTitle?: string
   notFoundText?: string
   children: (data: T, refresh: () => void) => ReactNode
 }
@@ -16,6 +17,7 @@ export function PageShell<T>({
   url,
   loadingText,
   errorText,
+  notFoundTitle = 'Vehicle not found',
   notFoundText = "There's no vehicle at this address.",
   children,
 }: PageShellProps<T>) {
@@ -33,7 +35,7 @@ export function PageShell<T>({
       {state.status === 'error' && <ErrorPanel message={errorText} onRetry={retry} />}
       {state.status === 'notFound' && (
         <>
-          <h1 className="mb-2 text-2xl font-semibold">Vehicle not found</h1>
+          <h1 className="mb-2 text-2xl font-semibold">{notFoundTitle}</h1>
           <p className="text-zinc-500 dark:text-zinc-400">{notFoundText}</p>
         </>
       )}

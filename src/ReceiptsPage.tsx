@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import type { ReceiptStatus, ReceiptView, ReceiptsResponse } from '../shared/api'
 import { todayInEastern } from '../shared/schedule'
-import { apiRequest } from './api'
+import { ApiError, apiRequest } from './api'
 import { ConfirmDelete } from './ConfirmDelete'
 import { formatDate } from './format'
 import { Link } from './Link'
@@ -34,6 +34,11 @@ function ReadButton({ id, label, onRead }: { id: number; label: string; onRead: 
       await apiRequest<ReceiptView>(`/api/receipts/${id}/read`, { method: 'POST' })
       onRead()
     } catch (err) {
+      // Already read (another tab, or a read that finished after the client gave up).
+      if (err instanceof ApiError && err.status === 409) {
+        onRead()
+        return
+      }
       console.error(err)
       setError("Couldn't read this receipt. Try again.")
       setReading(false)
@@ -89,6 +94,15 @@ function ReceiptRow({ receipt, onChanged }: { receipt: ReceiptView; onChanged: (
       </a>
       {receipt.status === 'pending' && (
         <ReadButton id={receipt.id} label={label} onRead={onChanged} />
+      )}
+      {receipt.status === 'review' && (
+        <Link
+          href={`/receipts/${receipt.id}/review`}
+          className={`${primaryButtonClass} mt-2 inline-block`}
+          aria-label={`Review ${label}`}
+        >
+          Review
+        </Link>
       )}
     </ConfirmDelete>
   )

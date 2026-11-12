@@ -63,7 +63,8 @@ function escapeRegExp(value: string): string {
 
 /**
  * The one service whose keywords appear in `description` as whole words or
- * phrases (case-insensitive). Null when no service or more than one matches.
+ * phrases (case-insensitive), optionally pluralized with `s` or `es`. Null when
+ * no service or more than one matches.
  */
 export function matchService(
   description: string,
@@ -71,7 +72,7 @@ export function matchService(
 ): number | null {
   const matched = services.filter((service) =>
     service.keywords.some((keyword) =>
-      new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(keyword)}(?![\\p{L}\\p{N}])`, 'iu').test(
+      new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(keyword)}(?:e?s)?(?![\\p{L}\\p{N}])`, 'iu').test(
         description,
       ),
     ),

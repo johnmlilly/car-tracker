@@ -29,7 +29,8 @@ export async function apiRequest<T>(url: string, init?: RequestInit): Promise<T>
 export type SubmitResult<T> =
   | { ok: true; data: T }
   | { ok: false; fields: Record<string, string> }
-  | { ok: false; error: string }
+  /** `status` is the HTTP status, or null when the request never got a response. */
+  | { ok: false; error: string; status: number | null }
 
 /**
  * Sends `body` as JSON. A 400 with field messages comes back as `fields` for
@@ -52,7 +53,11 @@ export async function submitJson<T>(
       return { ok: false, fields: err.fields }
     }
     console.error(err)
-    return { ok: false, error: "Couldn't save. Try again." }
+    return {
+      ok: false,
+      error: "Couldn't save. Try again.",
+      status: err instanceof ApiError ? err.status : null,
+    }
   }
 }
 

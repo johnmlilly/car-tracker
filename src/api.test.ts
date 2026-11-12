@@ -36,16 +36,17 @@ describe('submitJson', () => {
   })
 
   it.each([
-    ['a 400 without fields', () => json(400, { error: { message: 'Invalid' } })],
-    ['a 404', () => json(404, { error: { message: 'Not found' } })],
-    ['a 500', () => json(500, { error: { message: 'Something went wrong' } })],
-    ['a network failure', () => Promise.reject(new TypeError('Failed to fetch'))],
-  ])('returns a generic error for %s', async (_name, impl) => {
+    ['a 400 without fields', () => json(400, { error: { message: 'Invalid' } }), 400],
+    ['a 404', () => json(404, { error: { message: 'Not found' } }), 404],
+    ['a 500', () => json(500, { error: { message: 'Something went wrong' } }), 500],
+    ['a network failure', () => Promise.reject(new TypeError('Failed to fetch')), null],
+  ])('returns a generic error for %s', async (_name, impl, status) => {
     stubFetch(impl)
     vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(await submitJson('/api/things', 'POST', {})).toEqual({
       ok: false,
       error: "Couldn't save. Try again.",
+      status,
     })
   })
 })

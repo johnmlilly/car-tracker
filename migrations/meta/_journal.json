@@ -50,6 +50,20 @@
       "when": 1794277562188,
       "tag": "0006_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794455014632,
+      "tag": "0007_service_record_receipt",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794455020759,
+      "tag": "0008_corolla_transmission",
+      "breakpoints": true
     }
   ]
 }

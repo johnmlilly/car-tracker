@@ -45,6 +45,13 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <Link
             href={`/vehicles/${vehicle.id}/services`}
             className={actionClass}
+            aria-label={`Service history for ${vehicle.name}`}
+          >
+            Service history
+          </Link>
+          <Link
+            href={`/vehicles/${vehicle.id}/services`}
+            className={actionClass}
             aria-label={`Add service for ${vehicle.name}`}
           >
             Add service

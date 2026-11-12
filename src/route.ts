@@ -8,12 +8,15 @@ export type Route =
   | { name: 'services'; id: number }
   | { name: 'receipts' }
   | { name: 'receiptNew' }
+  | { name: 'receiptReview'; id: number }
   | { name: 'notFound' }
 
 export function matchRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') return { name: 'home' }
   if (/^\/receipts\/?$/.test(pathname)) return { name: 'receipts' }
   if (/^\/receipts\/new\/?$/.test(pathname)) return { name: 'receiptNew' }
+  const review = /^\/receipts\/([1-9]\d{0,9})\/review\/?$/.exec(pathname)
+  if (review) return { name: 'receiptReview', id: Number(review[1]) }
   const vehicle = /^\/vehicles\/([1-9]\d{0,9})\/?$/.exec(pathname)
   if (vehicle) return { name: 'vehicle', id: Number(vehicle[1]) }
   const odometer = /^\/vehicles\/([1-9]\d{0,9})\/odometer\/?$/.exec(pathname)

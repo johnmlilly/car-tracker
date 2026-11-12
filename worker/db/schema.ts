@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm'
-import { check, index, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
+import {
+  type AnySQLiteColumn,
+  check,
+  index,
+  integer,
+  sqliteTable,
+  text,
+  unique,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 
 export const vehicles = sqliteTable('vehicles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -114,8 +123,14 @@ export const serviceRecords = sqliteTable(
     source: text('source', { enum: ['manual', 'receipt', 'import'] })
       .notNull()
       .default('manual'),
+    /** Minder code printed on the receipt, as confirmed at review. */
+    minderCode: text('minder_code'),
+    receiptId: integer('receipt_id').references((): AnySQLiteColumn => receipts.id),
   },
-  (t) => [index('service_records_vehicle_id_date_idx').on(t.vehicleId, t.date)],
+  (t) => [
+    index('service_records_vehicle_id_date_idx').on(t.vehicleId, t.date),
+    uniqueIndex('service_records_receipt_id_unique').on(t.receiptId),
+  ],
 )
 
 export const serviceItems = sqliteTable(

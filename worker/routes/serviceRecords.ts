@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
 import type { BatchItem } from 'drizzle-orm/batch'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -8,18 +8,14 @@ import {
   dueItems,
   minderLogs,
   odometerLogs,
+  receipts,
   serviceItems,
   serviceRecords,
   services,
 } from '../db/schema'
 import { type Db, findVehicle, notFound, parseId } from '../http'
-import { findConflict } from '../odometer'
-import {
-  parseServiceRecordInput,
-  reassignClosures,
-  selectDueItemsToClose,
-} from '../serviceRecord'
-import { isOpen, selectDueItems } from '../status'
+import { parseServiceRecordInput, reassignClosures } from '../serviceRecord'
+import { prepareServiceRecordInsert } from '../serviceRecordWrite'
 
 export const serviceRecordRoutes = new Hono<{ Bindings: Env }>()
 
@@ -110,68 +106,9 @@ serviceRecordRoutes.post('/vehicles/:id/service-records', async (c) => {
   const vehicle = await findVehicle(db, id)
   if (!vehicle) return c.json(notFound('Vehicle not found'), 404)
 
-  const known = new Set((await db.select({ id: services.id }).from(services)).map((s) => s.id))
-  const unknownFields: Record<string, string> = {}
-  input.items.forEach((item, index) => {
-    if (item.serviceId !== null && !known.has(item.serviceId)) {
-      unknownFields[`items.${index}.serviceId`] = 'Pick a service from the list.'
-    }
-  })
-
-  if (input.odometer !== null) {
-    const existing = await db
-      .select({ date: odometerLogs.date, odometer: odometerLogs.odometer })
-      .from(odometerLogs)
-      .where(eq(odometerLogs.vehicleId, id))
-    const conflict = findConflict(existing, { date: input.date, odometer: input.odometer })
-    if (conflict) unknownFields.odometer = conflict
-  }
-  if (Object.keys(unknownFields).length > 0) return invalid(unknownFields)
-
-  const openRows = await selectDueItems(db).where(and(eq(minderLogs.vehicleId, id), isOpen))
-  const toClose = selectDueItemsToClose(
-    openRows,
-    input.items.map((i) => i.serviceId),
-    input.date,
-  )
-
-  // One batch is one transaction, so max(id) is the record inserted first.
-  const recordId = sql<number>`(SELECT max(${serviceRecords.id}) FROM ${serviceRecords})`
-  const statements: BatchItem<'sqlite'>[] = [
-    db.insert(serviceRecords).values({
-      vehicleId: id,
-      date: input.date,
-      odometer: input.odometer,
-      shop: input.shop,
-      totalCents: input.totalCents,
-      source: 'manual',
-    }),
-    db.insert(serviceItems).values(
-      input.items.map((item) => ({ ...item, serviceRecordId: recordId })),
-    ),
-  ]
-  if (input.odometer !== null) {
-    statements.push(
-      db.insert(odometerLogs).values({
-        vehicleId: id,
-        date: input.date,
-        odometer: input.odometer,
-        source: 'record',
-        serviceRecordId: recordId,
-      }),
-    )
-  }
-  if (toClose.length > 0) {
-    statements.push(
-      db
-        .update(dueItems)
-        .set({
-          closedByServiceItemId: sql`(SELECT min(${serviceItems.id}) FROM ${serviceItems} WHERE ${serviceItems.serviceRecordId} = ${recordId} AND ${serviceItems.serviceId} = ${dueItems.serviceId})`,
-        })
-        .where(and(inArray(dueItems.id, toClose), isNull(dueItems.closedByServiceItemId))),
-    )
-  }
-  await db.batch(statements as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]])
+  const prepared = await prepareServiceRecordInsert(db, id, input, { source: 'manual' })
+  if (!prepared.ok) return invalid(prepared.fields)
+  await db.batch(prepared.statements)
 
   return c.json<ServiceRecordsResponse>(await serviceRecordsView(db, vehicle, today), 201)
 })
@@ -182,7 +119,7 @@ serviceRecordRoutes.delete('/service-records/:id', async (c) => {
 
   const db = drizzle(c.env.DB)
   const [record] = await db
-    .select({ vehicleId: serviceRecords.vehicleId })
+    .select({ vehicleId: serviceRecords.vehicleId, receiptId: serviceRecords.receiptId })
     .from(serviceRecords)
     .where(eq(serviceRecords.id, id))
   if (!record) return c.json(notFound('Service record not found'), 404)
@@ -232,6 +169,12 @@ serviceRecordRoutes.delete('/service-records/:id', async (c) => {
     db.delete(odometerLogs).where(eq(odometerLogs.serviceRecordId, id)),
     db.delete(serviceItems).where(eq(serviceItems.serviceRecordId, id)),
   ]
+  // A record confirmed from a receipt sends that receipt back to review.
+  if (record.receiptId !== null) {
+    statements.push(
+      db.update(receipts).set({ status: 'review' }).where(eq(receipts.id, record.receiptId)),
+    )
+  }
   const results = await db.batch([
     ...(statements as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]]),
     db.delete(serviceRecords).where(eq(serviceRecords.id, id)).returning({ id: serviceRecords.id }),
