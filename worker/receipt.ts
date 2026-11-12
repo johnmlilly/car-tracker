@@ -3,7 +3,7 @@ import { parseId } from './http'
 
 export const FILE_MESSAGES = {
   missing: 'Choose a photo or PDF.',
-  type: 'Use a JPEG photo or a PDF.',
+  type: 'Use a photo or a PDF.',
   size: 'File is larger than 10 MB.',
 } as const
 
@@ -11,7 +11,9 @@ export const VEHICLE_MESSAGE = 'Choose a vehicle.'
 
 /** The receipt type from the file's leading bytes, or null for anything else. */
 export function sniffReceiptType(bytes: Uint8Array): ReceiptContentType | null {
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
+  const ascii = (start: number, text: string) =>
+    [...text].every((c, i) => bytes[start + i] === c.charCodeAt(0))
+  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp'
   const pdf = [0x25, 0x50, 0x44, 0x46, 0x2d] // %PDF-
   if (pdf.every((b, i) => bytes[i] === b)) return 'application/pdf'
   return null
@@ -45,7 +47,7 @@ export async function parseReceiptUpload(
   } else if (file.size > MAX_RECEIPT_BYTES) {
     fields.file = FILE_MESSAGES.size
   } else {
-    contentType = sniffReceiptType(new Uint8Array(await file.slice(0, 8).arrayBuffer()))
+    contentType = sniffReceiptType(new Uint8Array(await file.slice(0, 12).arrayBuffer()))
     if (contentType === null) fields.file = FILE_MESSAGES.type
   }
 

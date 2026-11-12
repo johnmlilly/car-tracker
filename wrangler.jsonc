@@ -18,11 +18,6 @@
 		{
 			"binding": "RECEIPTS",
 			"bucket_name": "car-tracker-receipts"
-		},
-		{
-			"bucket_name": "car-tracker-receipts",
-			"binding": "car_tracker_receipts",
-			"remote": true
 		}
 	],
 	"assets": {

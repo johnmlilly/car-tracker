@@ -22,7 +22,7 @@ function useRevokeOnChange(url: string | null) {
 async function uploadReceipt(vehicleId: string, blob: Blob): Promise<void> {
   const form = new FormData()
   form.set('vehicleId', vehicleId)
-  form.set('file', blob, blob.type === 'application/pdf' ? 'receipt.pdf' : 'receipt.jpg')
+  form.set('file', blob, blob.type === 'application/pdf' ? 'receipt.pdf' : 'receipt.webp')
   await apiRequest<ReceiptView>('/api/receipts', { method: 'POST', body: form })
 }
 

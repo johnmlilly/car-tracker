@@ -1,7 +1,7 @@
 import { MAX_RECEIPT_BYTES } from '../shared/api'
 
 export const MAX_EDGE = 1600
-const JPEG_QUALITY = 0.85
+const WEBP_QUALITY = 0.75
 
 export const PREPARE_MESSAGES = {
   type: 'Use a photo or a PDF.',
@@ -30,7 +30,7 @@ export function classifyFile(file: { type: string; size: number }): FileKind {
 
 export class PrepareError extends Error {}
 
-/** A PDF unchanged, or the image re-encoded as a JPEG at most MAX_EDGE px on its longer side. */
+/** A PDF unchanged, or the image re-encoded as WebP at most MAX_EDGE px on its longer side. */
 export async function prepareReceipt(file: File): Promise<Blob> {
   const kind = classifyFile(file)
   if ('error' in kind) throw new PrepareError(kind.error)
@@ -53,7 +53,7 @@ export async function prepareReceipt(file: File): Promise<Blob> {
   bitmap.close()
 
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/jpeg', JPEG_QUALITY),
+    canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY),
   )
   if (!blob) throw new PrepareError(PREPARE_MESSAGES.decode)
   if (blob.size > MAX_RECEIPT_BYTES) throw new PrepareError(PREPARE_MESSAGES.size)
