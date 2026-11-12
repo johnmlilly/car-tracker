@@ -3,6 +3,9 @@
 	"name": "car-tracker",
 	"main": "./worker/index.ts",
 	"compatibility_date": "2026-11-01",
+	"secrets": {
+		"required": ["ANTHROPIC_API_KEY"]
+	},
 	"observability": {
 		"enabled": true
 	},

@@ -154,3 +154,28 @@ export interface ReceiptView {
 export interface ReceiptsResponse {
   receipts: ReceiptView[]
 }
+
+/** One line read from a receipt, after server-side validation. */
+export interface ReceiptExtractionLine {
+  description: string
+  amountCents: number | null
+}
+
+/** What `extractReceipt()` read from a receipt, after server-side validation. */
+export interface ReceiptExtraction {
+  date: string | null
+  shop: string | null
+  odometer: number | null
+  totalCents: number | null
+  minderCode: string | null
+  lineItems: ReceiptExtractionLine[]
+}
+
+export interface ReceiptDetail extends ReceiptView {
+  /** Null until the receipt has been read. */
+  extraction:
+    | (Omit<ReceiptExtraction, 'lineItems'> & {
+        lineItems: (ReceiptExtractionLine & { suggestedServiceId: number | null })[]
+      })
+    | null
+}

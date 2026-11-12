@@ -109,14 +109,18 @@ typecheck.
 2. `npx wrangler d1 create car-tracker`, then copy the printed `database_id` into
    `wrangler.jsonc` (replacing the all-zero placeholder).
 3. `npx wrangler r2 bucket create car-tracker-receipts`
-4. `npm run db:migrate:remote`
-5. `npm run deploy`
-6. In the Cloudflare dashboard, enable Cloudflare Access for the Worker's
+4. `npx wrangler secret put ANTHROPIC_API_KEY` (receipt reading; for local dev, put
+   `ANTHROPIC_API_KEY=...` in `.dev.vars`, which is gitignored)
+5. `npm run db:migrate:remote`
+6. `npm run deploy`
+7. In the Cloudflare dashboard, enable Cloudflare Access for the Worker's
    `workers.dev` route and restrict it to your own email. Keep the app behind
    Access; it has no in-app login.
 
 An existing deployment that predates receipts (feature 6) needs step 3, then
 `npm run db:migrate:remote`, before its next `npm run deploy`.
+An existing deployment that predates receipt reading (feature 7a) needs step 4
+before its next `npm run deploy`.
 
 Testing is opt-in. If this project does not already have a unit test runner, run
 `/tests` or `$tests` to add one and update this section with the real test

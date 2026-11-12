@@ -4,12 +4,17 @@ import { Hono } from 'hono'
 import {
   MAX_RECEIPT_BYTES,
   type ErrorResponse,
+  type ReceiptDetail,
+  type ReceiptExtraction,
   type ReceiptView,
   type ReceiptsResponse,
 } from '../../shared/api'
-import { receipts, vehicles } from '../db/schema'
+import { todayInEastern } from '../../shared/schedule'
+import { receipts, services, vehicles } from '../db/schema'
+import { createClient, extractReceipt } from '../extract'
 import { type Db, findVehicle, notFound, parseId } from '../http'
 import { FILE_MESSAGES, parseReceiptUpload, VEHICLE_MESSAGE } from '../receipt'
+import { ExtractError, matchService, parseExtraction } from '../receiptExtraction'
 
 export const receiptRoutes = new Hono<{ Bindings: Env }>()
 
@@ -19,6 +24,8 @@ const MAX_BODY_BYTES = MAX_RECEIPT_BYTES + 64 * 1024
 const EXTENSIONS = { 'image/webp': 'webp', 'application/pdf': 'pdf' } as const
 
 const RECEIPT_NOT_FOUND = 'Receipt not found'
+const ALREADY_READ = 'This receipt has already been read.'
+const READ_FAILED = "Couldn't read this receipt. Try again."
 
 function selectReceipts(db: Db) {
   return db
@@ -90,6 +97,78 @@ receiptRoutes.post('/receipts', async (c) => {
 
   const [row] = await selectReceipts(db).where(eq(receipts.id, id))
   return c.json<ReceiptView>(toView(row), 201)
+})
+
+receiptRoutes.get('/receipts/:id', async (c) => {
+  const id = parseId(c.req.param('id'))
+  if (id === null) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+
+  const db = drizzle(c.env.DB)
+  const [row] = await selectReceipts(db).where(eq(receipts.id, id))
+  if (!row) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+  const [{ extraction: stored }] = await db
+    .select({ extraction: receipts.extraction })
+    .from(receipts)
+    .where(eq(receipts.id, id))
+
+  let extraction: ReceiptDetail['extraction'] = null
+  if (stored !== null) {
+    // Written only by the read route, after parseExtraction validated it.
+    const parsed = JSON.parse(stored) as ReceiptExtraction
+    const serviceList = await db
+      .select({ id: services.id, keywords: services.keywords })
+      .from(services)
+    extraction = {
+      ...parsed,
+      lineItems: parsed.lineItems.map((line) => ({
+        ...line,
+        suggestedServiceId: matchService(line.description, serviceList),
+      })),
+    }
+  }
+  return c.json<ReceiptDetail>({ ...toView(row), extraction })
+})
+
+receiptRoutes.post('/receipts/:id/read', async (c) => {
+  const id = parseId(c.req.param('id'))
+  if (id === null) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+
+  const db = drizzle(c.env.DB)
+  const [row] = await db
+    .select({ r2Key: receipts.r2Key, contentType: receipts.contentType, status: receipts.status })
+    .from(receipts)
+    .where(eq(receipts.id, id))
+  if (!row) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+  const alreadyRead = () => c.json<ErrorResponse>({ error: { message: ALREADY_READ } }, 409)
+  if (row.status !== 'pending') return alreadyRead()
+
+  const object = await c.env.RECEIPTS.get(row.r2Key)
+  if (!object) return c.json(notFound(RECEIPT_NOT_FOUND), 404)
+  if (!c.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set')
+
+  let extraction: ReceiptExtraction
+  try {
+    const raw = await extractReceipt(
+      { bytes: await object.arrayBuffer(), contentType: row.contentType },
+      createClient(c.env.ANTHROPIC_API_KEY),
+    )
+    extraction = parseExtraction(raw, todayInEastern(new Date()))
+  } catch (err) {
+    if (!(err instanceof ExtractError)) throw err
+    console.error(`Receipt ${id}: ${err.message}`)
+    return c.json<ErrorResponse>({ error: { message: READ_FAILED } }, 502)
+  }
+
+  // Only a still-pending receipt moves on; a concurrent read that won keeps its result.
+  const updated = await db
+    .update(receipts)
+    .set({ status: 'review', extraction: JSON.stringify(extraction) })
+    .where(and(eq(receipts.id, id), eq(receipts.status, 'pending')))
+    .returning({ id: receipts.id })
+  if (updated.length === 0) return alreadyRead()
+
+  const [view] = await selectReceipts(db).where(eq(receipts.id, id))
+  return c.json<ReceiptView>(toView(view))
 })
 
 receiptRoutes.get('/receipts/:id/file', async (c) => {

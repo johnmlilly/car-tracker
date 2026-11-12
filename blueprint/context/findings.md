@@ -102,3 +102,34 @@ are sniffed and served with `nosniff` + `sandbox` CSP; R2/D1 write order is
 object then row on create, row then object on delete; D1/R2 route tests use
 `startPlatform()` in `*.d1.test.ts` files, covered by `tsconfig.d1test.json`.
 **Resolution:**
+
+### F-07 [P3] open - Read retry shows a permanent error when the receipt was already read
+
+**File:** src/ReceiptsPage.tsx:36
+**Found:** 2026-11-12 by /audit independent (scope: current; lens: quality)
+**Why it matters:** `ReadButton` treats every failure the same, including the
+route's 409 "This receipt has already been read." That 409 is reachable: the
+upload page's read can fail on the client (for example Safari backgrounded on
+the iPhone) while the Worker still finishes it, or a second tab reads first.
+The row then stays "Waiting to be read" with "Couldn't read this receipt. Try
+again.", and every retry returns 409 again, so the list never updates until a
+manual reload.
+**Suggested fix:** In the catch, when `err instanceof ApiError && err.status === 409`,
+call `onRead()` to refresh the list instead of showing the error. No current
+requirement is lost.
+**Resolution:**
+
+### F-08 [P3] open - The concurrent-read 409 guard has no route test
+
+**File:** worker/routes/receipts.ts:168
+**Found:** 2026-11-12 by /audit independent (scope: current; lens: tests)
+**Why it matters:** The spec's data-integrity rule is that the final
+`UPDATE ... WHERE status = 'pending'` returns 409 when a concurrent read already
+moved the receipt, so the winner's extraction is kept. The existing "read twice"
+test hits the earlier status check (line 143), not this branch. A regression
+that drops the `status = 'pending'` condition would overwrite a stored
+extraction and still pass every test.
+**Suggested fix:** In `receipts.d1.test.ts`, make the `extract` mock set the row
+to `review` with a known extraction before resolving (simulating the winning
+read), then assert 409 and that the stored extraction is unchanged.
+**Resolution:**

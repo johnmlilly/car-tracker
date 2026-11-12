@@ -17,6 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.13.17",
     "react": "^19.3.1",

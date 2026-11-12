@@ -1,28 +1,77 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { ReceiptStatus, ReceiptView, ReceiptsResponse } from '../shared/api'
 import { todayInEastern } from '../shared/schedule'
+import { apiRequest } from './api'
 import { ConfirmDelete } from './ConfirmDelete'
 import { formatDate } from './format'
 import { Link } from './Link'
 import { PageShell } from './PageShell'
-import { primaryButtonClass } from './styles'
+import { buttonClass, errorTextClass, primaryButtonClass } from './styles'
 
 const STATUS_LABELS: Record<ReceiptStatus, string> = {
-  pending: 'Waiting for reading',
+  pending: 'Waiting to be read',
   review: 'Ready to review',
   confirmed: 'Confirmed',
 }
 
-function ReceiptRow({ receipt, onDeleted }: { receipt: ReceiptView; onDeleted: () => void }) {
+type UploadedState = 'read' | 'unread'
+
+const UPLOADED_MESSAGES: Record<UploadedState, string> = {
+  read: 'Receipt uploaded and read.',
+  unread: "Receipt uploaded, but it couldn't be read. Try again from the list.",
+}
+
+/** Retries reading a pending receipt; refreshes the list on success. */
+function ReadButton({ id, label, onRead }: { id: number; label: string; onRead: () => void }) {
+  const errorId = useId()
+  const [reading, setReading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function read() {
+    setReading(true)
+    setError(null)
+    try {
+      await apiRequest<ReceiptView>(`/api/receipts/${id}/read`, { method: 'POST' })
+      onRead()
+    } catch (err) {
+      console.error(err)
+      setError("Couldn't read this receipt. Try again.")
+      setReading(false)
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => void read()}
+        disabled={reading}
+        className={`${buttonClass} border border-zinc-300 dark:border-zinc-700`}
+        aria-label={`Read ${label}`}
+        aria-describedby={error ? errorId : undefined}
+      >
+        {reading ? 'Reading...' : 'Read receipt'}
+      </button>
+      {error && (
+        <p id={errorId} role="alert" className={`mt-1 ${errorTextClass}`}>
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function ReceiptRow({ receipt, onChanged }: { receipt: ReceiptView; onChanged: () => void }) {
   const vehicleName = receipt.vehicle?.name ?? 'No vehicle'
   const date = formatDate(todayInEastern(new Date(receipt.uploadedAt)))
   const kind = receipt.contentType === 'application/pdf' ? 'PDF' : 'Photo'
+  const label = `${kind.toLowerCase()} for ${vehicleName} uploaded ${date}`
 
   return (
     <ConfirmDelete
       url={receipt.status === 'pending' ? `/api/receipts/${receipt.id}` : undefined}
-      label={`${kind.toLowerCase()} for ${vehicleName} uploaded ${date}`}
-      onDeleted={onDeleted}
+      label={label}
+      onDeleted={onChanged}
     >
       <p className="font-medium">{vehicleName}</p>
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -38,14 +87,18 @@ function ReceiptRow({ receipt, onDeleted }: { receipt: ReceiptView; onDeleted: (
       >
         View
       </a>
+      {receipt.status === 'pending' && (
+        <ReadButton id={receipt.id} label={label} onRead={onChanged} />
+      )}
     </ConfirmDelete>
   )
 }
 
 function ReceiptsContent({ data, onChange }: { data: ReceiptsResponse; onChange: () => void }) {
-  const [uploaded, setUploaded] = useState(
-    () => (window.history.state as { uploaded?: boolean } | null)?.uploaded === true,
-  )
+  const [uploaded, setUploaded] = useState<UploadedState | null>(() => {
+    const state = (window.history.state as { uploaded?: unknown } | null)?.uploaded
+    return state === 'read' || state === 'unread' ? state : null
+  })
 
   return (
     <>
@@ -56,7 +109,7 @@ function ReceiptsContent({ data, onChange }: { data: ReceiptsResponse; onChange:
         </Link>
       </div>
       <p role="status" className="mb-2 text-sm text-green-800 dark:text-green-300">
-        {uploaded ? 'Receipt uploaded.' : ''}
+        {uploaded ? UPLOADED_MESSAGES[uploaded] : ''}
       </p>
       {data.receipts.length === 0 ? (
         <p className="text-zinc-500 dark:text-zinc-400">No receipts yet.</p>
@@ -66,8 +119,8 @@ function ReceiptsContent({ data, onChange }: { data: ReceiptsResponse; onChange:
             <ReceiptRow
               key={receipt.id}
               receipt={receipt}
-              onDeleted={() => {
-                setUploaded(false)
+              onChanged={() => {
+                setUploaded(null)
                 onChange()
               }}
             />

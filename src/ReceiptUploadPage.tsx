@@ -7,7 +7,13 @@ import { navigate } from './route'
 import { buttonClass, errorTextClass, primaryButtonClass } from './styles'
 
 type Fields = Partial<Record<'vehicleId' | 'file', string>>
-type Phase = 'idle' | 'preparing' | 'uploading'
+type Phase = 'idle' | 'preparing' | 'uploading' | 'reading'
+
+const PHASE_LABELS: Record<Exclude<Phase, 'idle'>, string> = {
+  preparing: 'Preparing photo...',
+  uploading: 'Uploading...',
+  reading: 'Reading receipt...',
+}
 
 const pickerClass = `${buttonClass} inline-flex cursor-pointer items-center justify-center border border-zinc-300 has-focus-visible:outline-2 dark:border-zinc-700`
 
@@ -19,11 +25,11 @@ function useRevokeOnChange(url: string | null) {
   }, [url])
 }
 
-async function uploadReceipt(vehicleId: string, blob: Blob): Promise<void> {
+async function uploadReceipt(vehicleId: string, blob: Blob): Promise<ReceiptView> {
   const form = new FormData()
   form.set('vehicleId', vehicleId)
   form.set('file', blob, blob.type === 'application/pdf' ? 'receipt.pdf' : 'receipt.webp')
-  await apiRequest<ReceiptView>('/api/receipts', { method: 'POST', body: form })
+  return apiRequest<ReceiptView>('/api/receipts', { method: 'POST', body: form })
 }
 
 function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'] }) {
@@ -57,11 +63,11 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
   async function upload(chosenVehicle: string, chosenFile: File) {
     setFormError(null)
     setPhase(chosenFile.type === 'application/pdf' ? 'uploading' : 'preparing')
+    let receipt: ReceiptView
     try {
       const blob = await prepareReceipt(chosenFile)
       setPhase('uploading')
-      await uploadReceipt(chosenVehicle, blob)
-      navigate('/receipts', { uploaded: true })
+      receipt = await uploadReceipt(chosenVehicle, blob)
     } catch (err) {
       setPhase('idle')
       if (err instanceof PrepareError) {
@@ -74,6 +80,17 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
         console.error(err)
         setFormError("Couldn't upload. Check your connection and try again.")
       }
+      return
+    }
+
+    // The receipt is stored; a failed read leaves it pending with a retry on the list.
+    setPhase('reading')
+    try {
+      await apiRequest<ReceiptView>(`/api/receipts/${receipt.id}/read`, { method: 'POST' })
+      navigate('/receipts', { uploaded: 'read' })
+    } catch (err) {
+      console.error(err)
+      navigate('/receipts', { uploaded: 'unread' })
     }
   }
 
@@ -183,11 +200,11 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
       )}
       <div>
         <button type="submit" disabled={busy} className={`${primaryButtonClass} w-full py-3`}>
-          {phase === 'preparing' ? 'Preparing photo...' : phase === 'uploading' ? 'Uploading...' : 'Upload'}
+          {phase === 'idle' ? 'Upload' : PHASE_LABELS[phase]}
         </button>
         {busy && (
           <p role="status" className="sr-only">
-            {phase === 'preparing' ? 'Preparing photo...' : 'Uploading...'}
+            {PHASE_LABELS[phase]}
           </p>
         )}
       </div>

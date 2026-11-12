@@ -1,6 +1,6 @@
 # car-tracker - Project Overview
 
-<!-- blueprint:source-hash baf2ef4895e7d46304c57f63dd304e3ca2f76609ea2e4f3b34614cdf91aa57d3 -->
+<!-- blueprint:source-hash 291fbb610c332208dc5aa31dd08c348aab940625f3e29309444c4b55f25688a8 -->
 
 > Personal, single-user PWA that tracks maintenance for a 2024 Honda Odyssey and a
 > 2019 Toyota Corolla: service history from receipt photos, what's due, and email

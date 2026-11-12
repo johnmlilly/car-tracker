@@ -1,14 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { ReceiptView, ReceiptsResponse } from '../../shared/api'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReceiptDetail, ReceiptView, ReceiptsResponse } from '../../shared/api'
+import { extractReceipt } from '../extract'
 import app from '../index'
+import { ExtractError } from '../receiptExtraction'
 import { FILE_MESSAGES, VEHICLE_MESSAGE } from '../receipt'
 import { startPlatform } from '../test/platform'
+
+vi.mock('../extract', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../extract')>()),
+  extractReceipt: vi.fn(),
+}))
+const extract = vi.mocked(extractReceipt)
 
 let env: Env
 let dispose: () => Promise<void>
 
 beforeEach(async () => {
   ;({ env, dispose } = await startPlatform())
+  env = { ...env, ANTHROPIC_API_KEY: 'test-key' }
+  extract.mockReset()
 })
 
 afterEach(async () => {
@@ -184,5 +194,106 @@ describe('receipt routes against D1 and R2', () => {
   it('returns 404 when deleting an invalid id', async () => {
     const res = await app.request('/api/receipts/0', { method: 'DELETE' }, env)
     expect(res.status).toBe(404)
+  })
+
+  describe('reading', () => {
+    const READ = {
+      date: '2026-11-10',
+      shop: 'Honda of Anytown',
+      odometer: 41_250,
+      totalCents: 12_999,
+      minderCode: 'B12',
+      lineItems: [
+        { description: 'Synthetic oil change', amountCents: 7999 },
+        { description: 'Cabin air filter', amountCents: 5000 },
+      ],
+    }
+
+    async function uploaded() {
+      return ((await (await upload({ vehicleId: '1', file: WEBP })).json()) as ReceiptView).id
+    }
+    const read = (id: number | string, readEnv: Env = env) =>
+      app.request(`/api/receipts/${id}/read`, { method: 'POST' }, readEnv)
+    const detail = async (id: number) =>
+      (await (await app.request(`/api/receipts/${id}`, {}, env)).json()) as ReceiptDetail
+
+    it('reads a pending receipt, stores the validated extraction, and moves it to review', async () => {
+      const id = await uploaded()
+      extract.mockResolvedValue({ ...READ, minderCode: 'b 21', shop: '  Honda of Anytown ' })
+
+      const res = await read(id)
+      expect(res.status).toBe(200)
+      expect(((await res.json()) as ReceiptView).status).toBe('review')
+
+      const [call] = extract.mock.calls
+      expect(call[0].contentType).toBe('image/webp')
+      expect(new Uint8Array(call[0].bytes)).toEqual(WEBP)
+
+      const row = await env.DB.prepare('SELECT status, extraction FROM receipts WHERE id = ?')
+        .bind(id)
+        .first<{ status: string; extraction: string }>()
+      expect(row?.status).toBe('review')
+      expect(JSON.parse(row!.extraction)).toEqual(READ)
+    })
+
+    it('returns the extraction with suggested services in the detail', async () => {
+      const id = await uploaded()
+      expect((await detail(id)).extraction).toBeNull()
+
+      extract.mockResolvedValue(READ)
+      await read(id)
+      const oil = await env.DB.prepare("SELECT id FROM services WHERE name = 'Oil and filter change'")
+        .first<{ id: number }>()
+      const result = await detail(id)
+      expect(result).toMatchObject({ id, status: 'review', vehicle: { id: 1 } })
+      expect(result.extraction?.lineItems).toEqual([
+        { description: 'Synthetic oil change', amountCents: 7999, suggestedServiceId: oil!.id },
+        { description: 'Cabin air filter', amountCents: 5000, suggestedServiceId: null },
+      ])
+      expect(result.extraction?.minderCode).toBe('B12')
+    })
+
+    it('refuses to read a receipt twice', async () => {
+      const id = await uploaded()
+      extract.mockResolvedValue(READ)
+      await read(id)
+      const res = await read(id)
+      expect(res.status).toBe(409)
+      expect(extract).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves the receipt pending when reading fails', async () => {
+      const id = await uploaded()
+      extract.mockRejectedValue(new ExtractError('Claude stopped: refusal'))
+      const res = await read(id)
+      expect(res.status).toBe(502)
+      expect(await res.json()).toEqual({ error: { message: "Couldn't read this receipt. Try again." } })
+      const row = await env.DB.prepare('SELECT status, extraction FROM receipts WHERE id = ?')
+        .bind(id)
+        .first<{ status: string; extraction: string | null }>()
+      expect(row).toEqual({ status: 'pending', extraction: null })
+    })
+
+    it('fails with 500 and stays pending when the API key is missing', async () => {
+      const id = await uploaded()
+      const res = await read(id, { ...env, ANTHROPIC_API_KEY: '' })
+      expect(res.status).toBe(500)
+      expect(extract).not.toHaveBeenCalled()
+      expect((await detail(id)).status).toBe('pending')
+    })
+
+    it('returns 404 for a missing receipt or file', async () => {
+      expect((await read(999)).status).toBe(404)
+      expect((await read('abc')).status).toBe(404)
+      expect((await app.request('/api/receipts/999', {}, env)).status).toBe(404)
+
+      const id = await uploaded()
+      const { r2Key } = (await env.DB.prepare('SELECT r2_key AS r2Key FROM receipts WHERE id = ?')
+        .bind(id)
+        .first<{ r2Key: string }>())!
+      await env.RECEIPTS.delete(r2Key)
+      expect((await read(id)).status).toBe(404)
+      expect(extract).not.toHaveBeenCalled()
+    })
   })
 })
