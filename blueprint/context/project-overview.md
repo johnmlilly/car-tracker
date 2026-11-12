@@ -90,10 +90,12 @@ Milestone 2 - Receipts
    stored in R2.
 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword
    mapping to services, side-by-side review, Minder code mismatch flag.
-8. **Bulk import** - upload many past receipts; confirm from a quick-review list.
+8. **UI refresh** - dark/light theme modeled on carmaintenance.app; inputs in
+   side drawers (bottom sheet on phone); 2-column service card grid; vehicle photos.
+9. **Bulk import** - upload many past receipts; confirm from a quick-review list.
 
 Milestone 3 - Reminders
-9. **Email reminders** - Resend weekly digest, next-morning overdue alert,
+10. **Email reminders** - Resend weekly digest, next-morning overdue alert,
    stale-odometer nudge.
 
 Non-goals (MVP): multiple users or sharing; offline mode or upload queue; push
@@ -216,19 +218,27 @@ None. Personal tool.
 
 ## UI/UX
 
-Clean, utilitarian, mobile-first; follows system light/dark. Status uses color plus
-a text label, never color alone.
+Modeled on carmaintenance.app: dark-first with a matching light variant (follows
+system), orange gradient accent, Archivo display headings, system text font, mono
+for mileage numbers, 24px card radius, pill buttons, lucide line icons. Mobile-first;
+status uses color plus a text label, never color alone. Inputs (last done, add
+service, odometer, Minder code) open in a right-side drawer on desktop and a bottom
+sheet on phone instead of inline forms or separate pages. Design reference:
+`prototypes/` (until feature 8 completes).
 
-- **Home** - two vehicle cards: estimated mileage, count of soon/overdue items.
-  Prominent **Add receipt** action in thumb reach; secondary: log odometer, log
-  Minder code, manual entry.
-- **Vehicle detail** - all items with status, last done, next due.
+- **Home** - two vehicle cards: bundled photo, estimated mileage, overdue/soon
+  chips, next due item. Prominent **Add receipt** action in thumb reach.
+- **Vehicle detail** - header with photo, ODO, and pill actions (Add service, Log
+  odometer, Log Minder code); service cards in a 2-column grid (1 on phone), most
+  urgent first, each with icon, countdown, interval progress bar, last done / next
+  due. Minder due items sit in the same grid with a code chip.
+- **Service history** - own page; Add service opens the drawer.
 - **Receipt review** - receipt image beside editable fields; Confirm writes the
   record.
 - **Bulk quick-review list** - one editable row per receipt (date, shop, odometer,
   services), batch confirm, full review on demand. Designed for laptop width.
-- **Interval baselines** (both vehicles), **odometer log**, **Minder code log**, **manual entry**
-  forms.
+- **Drawers** - last done, add service, log odometer (with recent readings), log
+  Minder code (with recent codes).
 
 > TODO: route paths are not set in the plan; choose them in feature 1.
 

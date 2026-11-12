@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone view - car-tracker prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="ui.css">
+<script src="proto.js"></script>
+<style>
+  .stage { display: grid; place-items: center; padding: var(--space-6) var(--space-4); }
+  .device { width: 390px; height: 844px; border-radius: 52px; padding: 12px; background: #000; box-shadow: 0 30px 80px rgba(0,0,0,.35); max-width: 100%; }
+  .device iframe { width: 100%; height: 100%; border: 0; border-radius: 40px; background: var(--bg); display: block; }
+  .cap { margin-top: var(--space-3); font-size: 12px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="device"><iframe id="f" title="Phone preview"></iframe></div>
+  <div class="cap">iPhone width (390 × 844) · drawers become bottom sheets under 640px</div>
+</div>
+<script>
+  document.getElementById('f').src = new URLSearchParams(location.search).get('src') || 'home.html'
+</script>
+</body>
+</html>

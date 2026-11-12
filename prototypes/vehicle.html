@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vehicle - car-tracker prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="ui.css">
+<script src="proto.js"></script>
+<style>
+  /* header */
+  .vhero { display: grid; grid-template-columns: 220px 1fr; gap: var(--space-5); align-items: center; margin-bottom: var(--space-6); }
+  .vhero .photo { aspect-ratio: 4 / 3; border-radius: var(--radius); border: 1px solid var(--border); }
+  .vhero h1 { font-size: 32px; font-weight: 800; }
+  .vhero .sub { color: var(--ink-3); font-size: 14px; margin-top: 2px; }
+  .odo-row { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-3) 0 var(--space-4); }
+  .odo-row .val { font-size: 30px; font-weight: 700; }
+  .odo-row .unit { color: var(--ink-3); font-weight: 600; }
+  .odo-row .est { color: var(--ink-3); font-size: 12px; margin-left: var(--space-2); }
+  .pills { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .vhero { grid-template-columns: 1fr; gap: var(--space-4); }
+    .vhero .photo { aspect-ratio: 16 / 9; }
+    .vhero h1 { font-size: 26px; }
+  }
+
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-3); }
+  .section-head h2 { font-size: 18px; font-weight: 700; }
+
+  /* service grid: fixed 2 columns, 1 on phone */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); list-style: none; padding: 0; margin: 0; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  .svc { padding: var(--space-5); display: grid; gap: var(--space-4); position: relative; overflow: hidden; }
+  .svc::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; }
+  .svc.overdue::before { background: var(--overdue); }
+  .svc.soon::before { background: var(--soon-bar); }
+  .svc-top { display: flex; gap: var(--space-3); align-items: start; }
+  .svc-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--surface-2); color: var(--ink-2); }
+  .overdue .svc-ico { color: var(--overdue); background: var(--overdue-soft); }
+  .soon .svc-ico { color: var(--soon); background: var(--soon-soft); }
+  .ok .svc-ico { color: var(--ok); background: var(--ok-soft); }
+  .svc-name { flex: 1; min-width: 0; }
+  .svc-name h3 { font-size: 16px; font-weight: 700; }
+  .svc-name .int { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .count { display: flex; align-items: baseline; gap: 6px; }
+  .count .n { font-family: var(--font-display); font-size: 34px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .count .u { font-weight: 600; color: var(--ink-2); }
+  .overdue .count .n { color: var(--overdue); }
+  .soon .count .n { color: var(--soon); }
+  .unknown .count .n { color: var(--ink-3); font-size: 22px; }
+  .bar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); margin-top: 6px; }
+  .svc-foot { display: flex; justify-content: space-between; align-items: end; gap: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-3); }
+  .svc-foot dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; }
+  .svc-foot dt { color: var(--ink-3); }
+  .svc-foot dd { margin: 0; }
+
+  .example-note { font-size: 12px; color: var(--ink-3); margin: var(--space-6) 0 var(--space-3); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+
+  /* drawer: right side on desktop, bottom sheet on phone */
+  .scrim { position: fixed; inset: 0; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; }
+  .drawer {
+    position: fixed; z-index: 61; top: 0; right: 0; bottom: 0; width: min(var(--drawer-width), 100vw);
+    background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-drawer);
+    display: flex; flex-direction: column; transform: translateX(100%); transition: transform .25s cubic-bezier(.2,.8,.2,1);
+  }
+  body[data-drawer] .scrim { opacity: 1; pointer-events: auto; }
+  .drawer.open { transform: none; }
+  .drawer-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-5) var(--space-5) var(--space-4); border-bottom: 1px solid var(--border); }
+  .drawer-head .svc-ico { width: 38px; height: 38px; border-radius: 12px; color: var(--accent-text); background: var(--accent-soft); }
+  .drawer-head h2 { font-size: 20px; font-weight: 800; flex: 1; }
+  .drawer-head .sub { font-size: 12px; color: var(--ink-3); font-family: var(--font-text); font-weight: 500; }
+  .drawer-body { flex: 1; overflow: auto; padding: var(--space-5); display: grid; gap: var(--space-4); align-content: start; }
+  .drawer-foot { display: flex; gap: var(--space-2); justify-content: flex-end; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
+  .handle { display: none; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  @media (max-width: 640px) {
+    .drawer {
+      top: auto; left: 0; width: 100%; max-height: 92svh; border-left: 0; border-top: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0; transform: translateY(100%);
+    }
+    .handle { display: block; width: 40px; height: 5px; border-radius: 99px; background: var(--border-strong); margin: 10px auto 0; }
+    .drawer-head { padding-top: var(--space-3); }
+    .drawer-foot .btn { flex: 1; justify-content: center; }
+    .drawer-foot { padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom)); }
+  }
+
+  .line { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3); display: grid; gap: var(--space-2); }
+  .line-top { display: flex; gap: var(--space-2); align-items: center; }
+  .line .input { background: var(--surface); }
+  .line-top select { flex: 1; }
+  .amount { width: 110px; text-align: right; }
+  .total { display: flex; justify-content: space-between; align-items: baseline; padding: var(--space-3) var(--space-1) 0; border-top: 1px dashed var(--border-strong); }
+  .total strong { font-size: 22px; }
+  .hint { font-size: 12px; color: var(--ink-3); }
+  .readings { list-style: none; margin: 0; padding: 0; }
+  .readings li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .readings li:last-child { border-bottom: 0; }
+  .subhead { font-size: 13px; font-weight: 700; color: var(--ink-2); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="home.html"><span class="brand-mark"><i data-i="wrench"></i></span>car-tracker</a>
+  <a class="btn btn-ghost" href="#"><i data-i="receipt"></i>Receipts</a>
+</header>
+
+<main class="wrap">
+  <a class="back" href="home.html"><i data-i="chevronLeft"></i>Garage</a>
+
+  <section class="vhero">
+    <div class="photo">
+      <svg class="car icon" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+      <span class="photo-note">corolla.jpg</span>
+    </div>
+    <div>
+      <h1>2019 Toyota Corolla</h1>
+      <div class="sub">Interval schedule · <a class="link" href="#">Service history<i data-i="chevronRight"></i></a></div>
+      <div class="odo-row">
+        <span class="val mono">58,420</span><span class="unit">mi</span>
+        <span class="est">estimated · last reading 57,980 on Oct 24</span>
+      </div>
+      <div class="pills">
+        <button class="btn btn-primary" data-open="service"><i data-i="plus"></i>Add service</button>
+        <button class="btn" data-open="odometer"><i data-i="gauge"></i>Log odometer</button>
+        <!-- Odyssey only: <button class="btn" data-open="minder"><i data-i="code"></i>Log Minder code</button> -->
+      </div>
+    </div>
+  </section>
+
+  <div class="section-head">
+    <h2>Schedule</h2>
+    <span class="faint" style="font-size:13px">Most urgent first</span>
+  </div>
+
+  <ul class="grid">
+    <li class="card svc overdue">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="droplet" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Oil and filter</h3><div class="int">Every 10,000 mi or 12 months</div></div>
+        <span class="chip chip-overdue"><i data-i="alert"></i>Overdue</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">340</span><span class="u">mi overdue</span></div>
+        <div class="bar bar-overdue" style="margin-top:10px"><span style="width:100%"></span></div>
+        <div class="bar-meta"><span class="mono">48,080</span><span class="mono">58,080</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Nov 9, 2025 · <span class="mono">48,080</span> mi</dd><dt>Next due</dt><dd><span class="mono">58,080</span> mi or Nov 9, 2026</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Oil and filter" aria-label="Edit last done for Oil and filter"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc soon">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="wind" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Cabin air filter</h3><div class="int">Every 15,000 mi or 24 months</div></div>
+        <span class="chip chip-soon"><i data-i="clock"></i>Soon</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">26</span><span class="u">days left</span></div>
+        <div class="bar bar-soon" style="margin-top:10px"><span style="width:96%"></span></div>
+        <div class="bar-meta"><span>Dec 7, 2024</span><span>Dec 7, 2026</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Dec 7, 2024 · <span class="mono">45,210</span> mi</dd><dt>Next due</dt><dd>Dec 7, 2026 or <span class="mono">60,210</span> mi</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Cabin air filter" aria-label="Edit last done for Cabin air filter"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc soon">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="tire" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Tire rotation</h3><div class="int">Every 5,000 mi</div></div>
+        <span class="chip chip-soon"><i data-i="clock"></i>Soon</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">410</span><span class="u">mi left</span></div>
+        <div class="bar bar-soon" style="margin-top:10px"><span style="width:92%"></span></div>
+        <div class="bar-meta"><span class="mono">53,830</span><span class="mono">58,830</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Jun 14, 2026 · <span class="mono">53,830</span> mi</dd><dt>Next due</dt><dd><span class="mono">58,830</span> mi</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Tire rotation" aria-label="Edit last done for Tire rotation"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc ok">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="filter" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Engine air filter</h3><div class="int">Every 30,000 mi or 36 months</div></div>
+        <span class="chip chip-ok"><i data-i="check"></i>OK</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">8,200</span><span class="u">mi left</span></div>
+        <div class="bar bar-ok" style="margin-top:10px"><span style="width:73%"></span></div>
+        <div class="bar-meta"><span class="mono">36,620</span><span class="mono">66,620</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Feb 2, 2024 · <span class="mono">36,620</span> mi</dd><dt>Next due</dt><dd><span class="mono">66,620</span> mi or Feb 2, 2027</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Engine air filter" aria-label="Edit last done for Engine air filter"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc ok">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="disc" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Brake fluid</h3><div class="int">Every 36 months</div></div>
+        <span class="chip chip-ok"><i data-i="check"></i>OK</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">14</span><span class="u">months left</span></div>
+        <div class="bar bar-ok" style="margin-top:10px"><span style="width:61%"></span></div>
+        <div class="bar-meta"><span>Jan 2024</span><span>Jan 2027</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Jan 18, 2024</dd><dt>Next due</dt><dd>Jan 18, 2027</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Brake fluid" aria-label="Edit last done for Brake fluid"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc ok">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="thermometer" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Coolant</h3><div class="int">Every 100,000 mi or 120 months</div></div>
+        <span class="chip chip-ok"><i data-i="check"></i>OK</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">41,580</span><span class="u">mi left</span></div>
+        <div class="bar bar-ok" style="margin-top:10px"><span style="width:58%"></span></div>
+        <div class="bar-meta"><span class="mono">0</span><span class="mono">100,000</span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>New (Apr 2019)</dd><dt>Next due</dt><dd><span class="mono">100,000</span> mi or Apr 2029</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Coolant" aria-label="Edit last done for Coolant"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+
+    <li class="card svc unknown">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="cog" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Transmission fluid</h3><div class="int">Every 60,000 mi or 72 months</div></div>
+        <span class="chip chip-unknown">No baseline</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">Not set</span></div>
+        <div class="bar" style="margin-top:10px"><span></span></div>
+        <div class="bar-meta"><span>Set last done to track</span><span></span></div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>Not set</dd><dt>Next due</dt><dd>Unknown</dd></dl>
+        <button class="btn" data-open="lastdone" data-name="Transmission fluid"><i data-i="pencil"></i>Set</button>
+      </div>
+    </li>
+  </ul>
+
+  <div class="example-note">Odyssey example · Minder item in the same grid</div>
+  <ul class="grid">
+    <li class="card svc overdue">
+      <div class="svc-top">
+        <span class="svc-ico"><i data-i="droplet" class="icon-lg"></i></span>
+        <div class="svc-name"><h3>Engine oil</h3><div class="int">Every 7,500 mi or 12 months</div></div>
+        <span class="chip chip-overdue"><i data-i="alert"></i>Overdue</span>
+      </div>
+      <div>
+        <div class="count"><span class="n">9</span><span class="u">days since code</span></div>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="chip chip-minder"><i data-i="code"></i>Minder A1 · Nov 2</span>
+          <span class="faint" style="font-size:12px; align-self:center">Interval: 1,620 mi left</span>
+        </div>
+      </div>
+      <div class="svc-foot">
+        <dl><dt>Last done</dt><dd>May 3, 2026 · <span class="mono">15,520</span> mi</dd><dt>Next due</dt><dd>Now (Minder)</dd></dl>
+        <button class="btn btn-icon btn-ghost" data-open="lastdone" data-name="Engine oil" aria-label="Edit last done for Engine oil"><i data-i="pencil"></i></button>
+      </div>
+    </li>
+  </ul>
+</main>
+
+<!-- Drawers -->
+<div class="scrim" data-close></div>
+
+<aside class="drawer" id="drawer-service" role="dialog" aria-modal="true" aria-labelledby="ds-title">
+  <div class="handle"></div>
+  <div class="drawer-head">
+    <span class="svc-ico"><i data-i="wrench"></i></span>
+    <h2 id="ds-title">Add service<div class="sub">2019 Toyota Corolla</div></h2>
+    <button class="btn btn-icon btn-ghost" data-close aria-label="Close"><i data-i="x"></i></button>
+  </div>
+  <div class="drawer-body">
+    <div class="row2">
+      <div class="field"><label for="s-date">Date</label><input id="s-date" class="input" type="date" value="2026-11-11"></div>
+      <div class="field"><label for="s-odo">Odometer</label><input id="s-odo" class="input mono" inputmode="numeric" value="58,420"></div>
+    </div>
+    <div class="field"><label for="s-shop">Shop</label><input id="s-shop" class="input" value="Toyota of Cary"></div>
+    <div class="subhead">Line items</div>
+    <div class="line">
+      <div class="line-top">
+        <select class="input" aria-label="Service"><option>Oil and filter</option></select>
+        <input class="input mono amount" value="$69.95" aria-label="Amount">
+      </div>
+      <input class="input" value="0W-16 synthetic oil change" aria-label="Description">
+    </div>
+    <div class="line">
+      <div class="line-top">
+        <select class="input" aria-label="Service"><option>Tire rotation</option></select>
+        <input class="input mono amount" value="$24.00" aria-label="Amount">
+      </div>
+      <input class="input" value="Rotate and balance" aria-label="Description">
+    </div>
+    <button class="link" type="button"><i data-i="plus"></i>Add line item</button>
+    <div class="total"><span class="muted">Total</span><strong class="mono">$93.95</strong></div>
+    <p class="hint">Closes Oil and filter and Tire rotation at 58,420 mi.</p>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost" data-close>Cancel</button>
+    <button class="btn btn-primary"><i data-i="check"></i>Save service</button>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-lastdone" role="dialog" aria-modal="true" aria-labelledby="dl-title">
+  <div class="handle"></div>
+  <div class="drawer-head">
+    <span class="svc-ico"><i data-i="history"></i></span>
+    <h2 id="dl-title">Last done<div class="sub" data-name-slot>Oil and filter</div></h2>
+    <button class="btn btn-icon btn-ghost" data-close aria-label="Close"><i data-i="x"></i></button>
+  </div>
+  <div class="drawer-body">
+    <p class="hint" style="margin:0">Enter when this was last done, before any service records in the app. Either field is enough.</p>
+    <div class="field"><label for="l-date">Date</label><input id="l-date" class="input" type="date" value="2025-11-09"></div>
+    <div class="field"><label for="l-odo">Odometer</label><input id="l-odo" class="input mono" inputmode="numeric" value="48,080"></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost" data-close>Cancel</button>
+    <button class="btn btn-primary"><i data-i="check"></i>Save</button>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-odometer" role="dialog" aria-modal="true" aria-labelledby="do-title">
+  <div class="handle"></div>
+  <div class="drawer-head">
+    <span class="svc-ico"><i data-i="gauge"></i></span>
+    <h2 id="do-title">Log odometer<div class="sub">Estimated now: 58,420 mi</div></h2>
+    <button class="btn btn-icon btn-ghost" data-close aria-label="Close"><i data-i="x"></i></button>
+  </div>
+  <div class="drawer-body">
+    <div class="row2">
+      <div class="field"><label for="o-odo">Reading</label><input id="o-odo" class="input mono" inputmode="numeric" placeholder="58,420"></div>
+      <div class="field"><label for="o-date">Date</label><input id="o-date" class="input" type="date" value="2026-11-11"></div>
+    </div>
+    <div class="subhead">Recent readings</div>
+    <ul class="readings">
+      <li><span><span class="mono">57,980</span> mi <span class="faint">· Oct 24</span></span><button class="btn btn-icon btn-ghost" aria-label="Delete reading"><i data-i="trash"></i></button></li>
+      <li><span><span class="mono">56,410</span> mi <span class="faint">· Sep 30</span></span><button class="btn btn-icon btn-ghost" aria-label="Delete reading"><i data-i="trash"></i></button></li>
+      <li><span><span class="mono">53,830</span> mi <span class="faint">· Jun 14 · from service</span></span><span></span></li>
+    </ul>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost" data-close>Cancel</button>
+    <button class="btn btn-primary"><i data-i="check"></i>Save reading</button>
+  </div>
+</aside>
+
+<script>
+  // Prototype-only drawer toggling.
+  function openDrawer(name, label) {
+    closeDrawer()
+    const d = document.getElementById('drawer-' + name)
+    if (!d) return
+    if (label) d.querySelector('[data-name-slot]').textContent = label
+    document.body.dataset.drawer = name
+    d.classList.add('open')
+  }
+  function closeDrawer() {
+    delete document.body.dataset.drawer
+    document.querySelectorAll('.drawer.open').forEach((d) => d.classList.remove('open'))
+  }
+  document.addEventListener('click', (e) => {
+    const o = e.target.closest('[data-open]')
+    if (o) return openDrawer(o.dataset.open, o.dataset.name)
+    if (e.target.closest('[data-close]')) closeDrawer()
+  })
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer() })
+  const start = new URLSearchParams(location.search).get('drawer')
+  if (start) addEventListener('DOMContentLoaded', () => openDrawer(start))
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home - car-tracker prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="ui.css">
+<script src="proto.js"></script>
+<style>
+  .hero { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .hero h1 { font-size: 34px; font-weight: 800; }
+  .hero p { margin: 4px 0 0; }
+  .garage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+  @media (max-width: 720px) { .garage { grid-template-columns: 1fr; } }
+
+  .vcard { overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+  .vcard:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .vcard .photo { aspect-ratio: 16 / 9; }
+  .vcard .photo .chips { position: absolute; top: 14px; left: 14px; display: flex; gap: 6px; }
+  .vcard .photo .chips .chip { backdrop-filter: blur(8px); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+  .vbody { padding: var(--space-5); display: grid; gap: var(--space-4); }
+  .vhead { display: flex; justify-content: space-between; gap: var(--space-3); align-items: start; }
+  .vhead h2 { font-size: 22px; font-weight: 800; }
+  .vhead .sub { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+  .odo { text-align: right; }
+  .odo .label { font: 700 10px/1 var(--font-text); letter-spacing: .12em; color: var(--ink-3); text-transform: uppercase; }
+  .odo .val { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .odo .est { font-size: 11px; color: var(--ink-3); }
+  .next { display: flex; align-items: center; gap: var(--space-3); background: var(--surface-2); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
+  .next .ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .next .ico.overdue { color: var(--overdue); background: var(--overdue-soft); }
+  .next .ico.soon { color: var(--soon); background: var(--soon-soft); }
+  .next .what { flex: 1; min-width: 0; }
+  .next .what .k { font-size: 11px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .next .what .v { font-weight: 600; }
+  .next .when { font-weight: 700; text-align: right; font-size: 14px; }
+  .vactions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  .fab { position: fixed; right: 20px; bottom: 24px; z-index: 20; padding: 15px 20px; font-size: 15px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="home.html"><span class="brand-mark"><i data-i="wrench"></i></span>car-tracker</a>
+  <a class="btn btn-ghost" href="#"><i data-i="receipt"></i>Receipts</a>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <h1>Garage</h1>
+      <p class="muted">3 items overdue, 2 due soon across 2 vehicles.</p>
+    </div>
+  </div>
+
+  <div class="garage">
+    <!-- Odyssey -->
+    <a class="card vcard" href="vehicle.html">
+      <div class="photo">
+        <svg class="car icon" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+        <div class="chips">
+          <span class="chip chip-overdue"><i data-i="alert"></i>2 overdue</span>
+          <span class="chip chip-soon"><i data-i="clock"></i>1 soon</span>
+        </div>
+        <span class="photo-note">odyssey.jpg (bundled)</span>
+      </div>
+      <div class="vbody">
+        <div class="vhead">
+          <div>
+            <h2>2024 Honda Odyssey</h2>
+            <div class="sub">Interval schedule + Maintenance Minder</div>
+          </div>
+          <div class="odo">
+            <div class="label">ODO</div>
+            <div class="val mono">21,884</div>
+            <div class="est">est. · 38 mi/day</div>
+          </div>
+        </div>
+        <div class="next">
+          <span class="ico overdue"><i data-i="droplet" class="icon-lg"></i></span>
+          <div class="what">
+            <div class="k">Next due · Minder A1</div>
+            <div class="v">Engine oil</div>
+          </div>
+          <div class="when" style="color: var(--overdue)">Overdue<br><span class="mono faint" style="font-weight:500;font-size:12px">since Nov 2</span></div>
+        </div>
+      </div>
+    </a>
+
+    <!-- Corolla -->
+    <a class="card vcard" href="vehicle.html">
+      <div class="photo">
+        <svg class="car icon" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+        <div class="chips">
+          <span class="chip chip-overdue"><i data-i="alert"></i>1 overdue</span>
+          <span class="chip chip-soon"><i data-i="clock"></i>1 soon</span>
+        </div>
+        <span class="photo-note">corolla.jpg (bundled)</span>
+      </div>
+      <div class="vbody">
+        <div class="vhead">
+          <div>
+            <h2>2019 Toyota Corolla</h2>
+            <div class="sub">Interval schedule</div>
+          </div>
+          <div class="odo">
+            <div class="label">ODO</div>
+            <div class="val mono">58,420</div>
+            <div class="est">est. · 24 mi/day</div>
+          </div>
+        </div>
+        <div class="next">
+          <span class="ico overdue"><i data-i="droplet" class="icon-lg"></i></span>
+          <div class="what">
+            <div class="k">Next due</div>
+            <div class="v">Oil and filter</div>
+          </div>
+          <div class="when mono" style="color: var(--overdue)">340 mi<br><span class="faint" style="font-weight:500;font-size:12px;font-family:var(--font-text)">overdue</span></div>
+        </div>
+      </div>
+    </a>
+  </div>
+</main>
+
+<a class="btn btn-primary fab" href="#"><i data-i="receipt"></i>Add receipt</a>
+</body>
+</html>
