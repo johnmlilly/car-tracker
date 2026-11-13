@@ -11,7 +11,7 @@
   /* Layout: summary line + filters, then records grouped by year.
      Desktop: one scannable row per record in fixed columns. Phone: compact stacked rows. */
   .hhead { display: flex; justify-content: space-between; align-items: end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
-  .hhead h1 { font-size: 32px; font-weight: 800; }
+  .hhead h1 { font-size: 32px; font-weight: 700; }
   .hhead .sub { color: var(--ink-3); font-size: 14px; margin-top: 2px; }
   .stats { display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-3); }
   .stat .k { font: 700 10px/1 var(--font-text); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
@@ -28,7 +28,7 @@
 
   .year { margin-bottom: var(--space-6); }
   .year-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 var(--space-1) var(--space-2); border-bottom: 1px solid var(--border-strong); }
-  .year-head h2 { font-size: 22px; font-weight: 800; }
+  .year-head h2 { font-size: 22px; font-weight: 700; }
   .year-head span { font-size: 13px; color: var(--ink-3); }
 
   .cols, .rec-main {
@@ -57,7 +57,7 @@
 
   .thumb { width: 44px; height: 56px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; overflow: hidden; padding: 0; cursor: zoom-in; color: var(--ink-2); text-decoration: none; justify-self: end; }
   .thumb svg.r { width: 100%; height: 100%; }
-  .thumb.pdf { cursor: pointer; font: 800 10px/1 var(--font-text); letter-spacing: .06em; color: var(--overdue); flex-direction: column; gap: 4px; display: flex; align-items: center; justify-content: center; }
+  .thumb.pdf { cursor: pointer; font: 700 10px/1 var(--font-text); letter-spacing: .06em; color: var(--overdue); flex-direction: column; gap: 4px; display: flex; align-items: center; justify-content: center; }
   .thumb.pdf .icon { width: 18px; height: 18px; color: var(--ink-3); }
   .noreceipt { font-size: 11px; color: var(--ink-3); text-align: right; line-height: 1.2; }
 
@@ -81,7 +81,7 @@
   body[data-viewer] .viewer-scrim { display: block; }
   body[data-viewer] .viewer { display: flex; }
   .viewer-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border); }
-  .viewer-head h2 { font-size: 17px; font-weight: 800; flex: 1; }
+  .viewer-head h2 { font-size: 17px; font-weight: 700; flex: 1; }
   .viewer-head .sub { font: 500 12px var(--font-text); color: var(--ink-3); }
   .viewer-body { overflow: auto; background: var(--bg-2); padding: var(--space-5); display: grid; place-items: center; }
   .viewer-body svg { width: 100%; max-width: 380px; height: auto; border-radius: 6px; box-shadow: var(--shadow); }

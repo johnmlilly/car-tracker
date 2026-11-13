@@ -9,8 +9,9 @@ body {
   font-size: 15px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
 }
-h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -0.01em; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -0.015em; }
 .icon { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .icon-lg { width: 22px; height: 22px; }
 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -38,7 +39,7 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -0.01e
   max-width: 1040px; margin: 0 auto; padding: var(--space-4) var(--space-4) 0;
 }
 .brand { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); text-decoration: none; }
-.brand-mark { width: 30px; height: 30px; border-radius: 10px; background: var(--accent-grad); color: var(--accent-ink); display: grid; place-items: center; }
+.brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent-grad); color: var(--accent-ink); display: grid; place-items: center; }
 .brand-mark .icon { width: 17px; height: 17px; stroke-width: 2.4; }
 .wrap { max-width: 1040px; margin: 0 auto; padding: var(--space-5) var(--space-4) 96px; }
 .back { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); text-decoration: none; font-size: 14px; margin-bottom: var(--space-4); }
@@ -51,7 +52,7 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: -0.01e
   background: var(--surface); color: var(--ink); cursor: pointer; text-decoration: none; white-space: nowrap;
 }
 .btn:hover { border-color: var(--ink-3); }
-.btn-primary { background: var(--accent-grad); color: var(--accent-ink); border-color: transparent; box-shadow: 0 6px 20px rgba(255, 122, 46, 0.28); }
+.btn-primary { background: var(--accent-grad); color: var(--accent-ink); border-color: transparent;  }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
 .btn-icon { padding: 9px; }
 .link { color: var(--accent-text); font-weight: 600; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer; }

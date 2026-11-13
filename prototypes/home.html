@@ -9,26 +9,26 @@
 <script src="proto.js"></script>
 <style>
   .hero { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
-  .hero h1 { font-size: 34px; font-weight: 800; }
+  .hero h1 { font-size: 34px; font-weight: 700; }
   .hero p { margin: 4px 0 0; }
   .garage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
   @media (max-width: 720px) { .garage { grid-template-columns: 1fr; } }
 
   .vcard { overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
-  .vcard:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .vcard:hover { border-color: var(--border-strong); }
   .vcard .photo { aspect-ratio: 16 / 9; }
   .vcard .photo .chips { position: absolute; top: 14px; left: 14px; display: flex; gap: 6px; }
   .vcard .photo .chips .chip { backdrop-filter: blur(8px); background: color-mix(in srgb, var(--surface) 80%, transparent); }
   .vbody { padding: var(--space-5); display: grid; gap: var(--space-4); }
   .vhead { display: flex; justify-content: space-between; gap: var(--space-3); align-items: start; }
-  .vhead h2 { font-size: 22px; font-weight: 800; }
+  .vhead h2 { font-size: 22px; font-weight: 700; }
   .vhead .sub { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
   .odo { text-align: right; }
   .odo .label { font: 700 10px/1 var(--font-text); letter-spacing: .12em; color: var(--ink-3); text-transform: uppercase; }
   .odo .val { font-size: 24px; font-weight: 700; margin-top: 4px; }
   .odo .est { font-size: 11px; color: var(--ink-3); }
   .next { display: flex; align-items: center; gap: var(--space-3); background: var(--surface-2); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
-  .next .ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .next .ico { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; flex: none; }
   .next .ico.overdue { color: var(--overdue); background: var(--overdue-soft); }
   .next .ico.soon { color: var(--soon); background: var(--soon-soft); }
   .next .what { flex: 1; min-width: 0; }

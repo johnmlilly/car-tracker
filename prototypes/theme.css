@@ -1,59 +1,55 @@
 /* car-tracker theme - durable output of /prototype.
    Port into src/index.css (Tailwind v4 @theme) in feature 8.
-   Modeled on carmaintenance.app: dark-first, orange gradient accent,
-   Archivo display, system text, mono numbers. Light is the matching variant.
-   Follows system; [data-theme] forces one. */
-
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&display=swap");
+   Light-first, muted slate palette, one flat slate-blue accent,
+   system font throughout with tabular numbers. Follows system;
+   [data-theme] forces one. */
 
 :root {
   color-scheme: light;
 
-  /* surfaces */
-  --bg: #f5f6f9;
-  --bg-2: #eceef3;
+  /* surfaces: cool slate neutrals */
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
   --surface: #ffffff;
-  --surface-2: #f2f4f7;
-  --border: rgba(13, 16, 24, 0.09);
-  --border-strong: rgba(13, 16, 24, 0.18);
-  --scrim: rgba(13, 16, 24, 0.45);
-  --shadow: 0 1px 2px rgba(13, 16, 24, 0.06), 0 8px 24px rgba(13, 16, 24, 0.06);
-  --shadow-drawer: -12px 0 40px rgba(13, 16, 24, 0.18);
+  --surface-2: #f1f5f9;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --scrim: rgba(15, 23, 42, 0.40);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-drawer: -8px 0 24px rgba(15, 23, 42, 0.10);
 
   /* text */
-  --ink: #0d1018;
-  --ink-2: #4a5160;
-  --ink-3: #7a8394;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;
 
-  /* accent */
-  --accent: #ff7a2e;
-  --accent-2: #ffab2e;
-  --accent-3: #ff4d2d;
-  --accent-text: #d9531a;          /* accent used as text/links on light */
-  --accent-ink: #ffffff;           /* text on accent fill */
-  --accent-grad: linear-gradient(135deg, var(--accent-2) 0%, var(--accent) 45%, var(--accent-3) 100%);
-  --accent-soft: rgba(255, 122, 46, 0.12);
+  /* accent: one muted slate blue, flat */
+  --accent: #4a5f80;
+  --accent-text: #3e5272;
+  --accent-ink: #ffffff;
+  --accent-grad: var(--accent);
+  --accent-soft: rgba(74, 95, 128, 0.10);
 
-  /* status (always paired with a text label) */
-  --ok: #059669;
-  --ok-soft: rgba(5, 150, 105, 0.12);
-  --soon: #b45309;
-  --soon-bar: #f59e0b;
-  --soon-soft: rgba(245, 158, 11, 0.14);
-  --overdue: #dc2626;
-  --overdue-soft: rgba(220, 38, 38, 0.10);
+  /* status: muted, always paired with a text label */
+  --ok: #3f7a5a;
+  --ok-soft: rgba(63, 122, 90, 0.10);
+  --soon: #94650f;
+  --soon-bar: #c99a45;
+  --soon-soft: rgba(201, 154, 69, 0.14);
+  --overdue: #b0463c;
+  --overdue-soft: rgba(176, 70, 60, 0.09);
   --unknown: var(--ink-3);
   --unknown-soft: var(--surface-2);
 
-  /* type */
-  --font-display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* type: system font only */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-text: var(--font-display);
+  --font-mono: var(--font-display); /* numbers use tabular-nums, not a mono face */
 
   /* scale */
-  --radius: 24px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
+  --radius: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
   --radius-pill: 999px;
   --space-1: 4px;
   --space-2: 8px;
@@ -67,53 +63,55 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #07090e;
-    --bg-2: #0b0e15;
-    --surface: #10131c;
-    --surface-2: #161a25;
-    --border: rgba(255, 255, 255, 0.07);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --scrim: rgba(0, 0, 0, 0.6);
-    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px rgba(0, 0, 0, 0.35);
-    --shadow-drawer: -16px 0 48px rgba(0, 0, 0, 0.55);
-    --ink: #f4f5f7;
-    --ink-2: #a6adbb;
-    --ink-3: #6e7688;
-    --accent-text: #ff8a45;
-    --accent-ink: #160a03;
-    --accent-soft: rgba(255, 122, 46, 0.14);
-    --ok: #34d399;
-    --ok-soft: rgba(52, 211, 153, 0.12);
-    --soon: #fbbf24;
-    --soon-bar: #fbbf24;
-    --soon-soft: rgba(251, 191, 36, 0.12);
-    --overdue: #f87171;
-    --overdue-soft: rgba(248, 113, 113, 0.12);
+  --bg: #0e131a;
+  --bg-2: #121821;
+  --surface: #161d27;
+  --surface-2: #1c2430;
+  --border: rgba(226, 232, 240, 0.08);
+  --border-strong: rgba(226, 232, 240, 0.16);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-drawer: -8px 0 28px rgba(0, 0, 0, 0.45);
+  --ink: #e6eaf0;
+  --ink-2: #a4aebc;
+  --ink-3: #7d8898;
+  --accent: #8fa4c4;
+  --accent-text: #a8bad6;
+  --accent-ink: #0e131a;
+  --accent-soft: rgba(143, 164, 196, 0.14);
+  --ok: #82bf9c;
+  --ok-soft: rgba(130, 191, 156, 0.12);
+  --soon: #d8b36d;
+  --soon-bar: #d8b36d;
+  --soon-soft: rgba(216, 179, 109, 0.13);
+  --overdue: #e08b81;
+  --overdue-soft: rgba(224, 139, 129, 0.12);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #07090e;
-  --bg-2: #0b0e15;
-  --surface: #10131c;
-  --surface-2: #161a25;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --scrim: rgba(0, 0, 0, 0.6);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px rgba(0, 0, 0, 0.35);
-  --shadow-drawer: -16px 0 48px rgba(0, 0, 0, 0.55);
-  --ink: #f4f5f7;
-  --ink-2: #a6adbb;
-  --ink-3: #6e7688;
-  --accent-text: #ff8a45;
-  --accent-ink: #160a03;
-  --accent-soft: rgba(255, 122, 46, 0.14);
-  --ok: #34d399;
-  --ok-soft: rgba(52, 211, 153, 0.12);
-  --soon: #fbbf24;
-  --soon-bar: #fbbf24;
-  --soon-soft: rgba(251, 191, 36, 0.12);
-  --overdue: #f87171;
-  --overdue-soft: rgba(248, 113, 113, 0.12);
+  --bg: #0e131a;
+  --bg-2: #121821;
+  --surface: #161d27;
+  --surface-2: #1c2430;
+  --border: rgba(226, 232, 240, 0.08);
+  --border-strong: rgba(226, 232, 240, 0.16);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-drawer: -8px 0 28px rgba(0, 0, 0, 0.45);
+  --ink: #e6eaf0;
+  --ink-2: #a4aebc;
+  --ink-3: #7d8898;
+  --accent: #8fa4c4;
+  --accent-text: #a8bad6;
+  --accent-ink: #0e131a;
+  --accent-soft: rgba(143, 164, 196, 0.14);
+  --ok: #82bf9c;
+  --ok-soft: rgba(130, 191, 156, 0.12);
+  --soon: #d8b36d;
+  --soon-bar: #d8b36d;
+  --soon-soft: rgba(216, 179, 109, 0.13);
+  --overdue: #e08b81;
+  --overdue-soft: rgba(224, 139, 129, 0.12);
 }
