@@ -139,7 +139,7 @@ export interface OdometerResponse {
 /** Largest receipt file the API accepts (10 MiB). */
 export const MAX_RECEIPT_BYTES = 10 * 1024 * 1024
 
-export type ReceiptContentType = 'image/webp' | 'image/jpeg' | 'application/pdf'
+export type ReceiptContentType = 'image/webp' | 'image/jpeg' | 'image/png' | 'application/pdf'
 
 export type ReceiptStatus = 'pending' | 'review' | 'confirmed'
 

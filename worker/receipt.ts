@@ -15,6 +15,8 @@ export function sniffReceiptType(bytes: Uint8Array): ReceiptContentType | null {
     [...text].every((c, i) => bytes[start + i] === c.charCodeAt(0))
   if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp'
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+  if (png.every((b, i) => bytes[i] === b)) return 'image/png'
   const pdf = [0x25, 0x50, 0x44, 0x46, 0x2d] // %PDF-
   if (pdf.every((b, i) => bytes[i] === b)) return 'application/pdf'
   return null
