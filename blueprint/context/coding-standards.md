@@ -66,8 +66,13 @@
   theme tokens in `@theme` in `src/index.css`; there is no `tailwind.config.js`.
 - Style with utility classes. Write custom CSS only for what utilities can't
   express cleanly.
-- No component library is installed yet; build small components in React.
-  Feature 8 adds shadcn/ui in `src/components/ui/` and updates this rule.
+- shadcn/ui is the default component library. For any new component or widget
+  (buttons, inputs, selects, badges, drawers, sheets, dialogs, tables, menus),
+  use the shadcn component first, added with the shadcn CLI into
+  `src/components/ui/`, and style it through the theme tokens in `src/index.css`.
+  Build a custom component only when shadcn has no fit, and compose it from
+  shadcn parts where possible. Feature 8 installs shadcn; until then, build small
+  components in React.
 - No inline styles except for truly dynamic values.
 - Mobile-first: layouts must work on a phone (receipt capture is a mobile flow).
 
