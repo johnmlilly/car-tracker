@@ -5,5 +5,9 @@
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.worker.json" },
     { "path": "./tsconfig.d1test.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
+  }
 }

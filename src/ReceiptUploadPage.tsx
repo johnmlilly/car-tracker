@@ -3,8 +3,9 @@ import type { ReceiptView, VehiclesResponse } from '../shared/api'
 import { ApiError, apiRequest } from './api'
 import { PageShell } from './PageShell'
 import { classifyFile, prepareReceipt, PrepareError } from './receiptFile'
-import { navigate } from './route'
-import { buttonClass, errorTextClass, primaryButtonClass } from './styles'
+import { navigate, vehicleParam } from './route'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type Fields = Partial<Record<'vehicleId' | 'file', string>>
 type Phase = 'idle' | 'preparing' | 'uploading' | 'reading'
@@ -15,7 +16,10 @@ const PHASE_LABELS: Record<Exclude<Phase, 'idle'>, string> = {
   reading: 'Reading receipt...',
 }
 
-const pickerClass = `${buttonClass} inline-flex cursor-pointer items-center justify-center border border-zinc-300 has-focus-visible:outline-2 dark:border-zinc-700`
+const pickerClass = cn(
+  buttonVariants({ variant: 'outline', size: 'lg' }),
+  'cursor-pointer has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50',
+)
 
 /** Revokes the object URL when it is replaced or the form unmounts. */
 function useRevokeOnChange(url: string | null) {
@@ -46,7 +50,11 @@ async function uploadReceipt(vehicleId: string, blob: Blob): Promise<ReceiptView
 
 function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'] }) {
   const id = useId()
-  const [vehicleId, setVehicleId] = useState('')
+  // "Add receipt" on a vehicle page links here with ?vehicle=<id>; ignore unknown ids.
+  const [vehicleId, setVehicleId] = useState(() => {
+    const wanted = vehicleParam(window.location.search)
+    return vehicles.some((v) => v.id === wanted) ? String(wanted) : ''
+  })
   const [file, setFile] = useState<File | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Fields>({})
   const [formError, setFormError] = useState<string | null>(null)
@@ -132,7 +140,7 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
           {vehicles.map((vehicle) => (
             <label
               key={vehicle.id}
-              className="flex items-center gap-3 rounded-md border border-zinc-300 px-3 py-3 has-checked:border-zinc-900 dark:border-zinc-700 dark:has-checked:border-zinc-100"
+              className="flex items-center gap-3 rounded-md border border-line-strong bg-surface px-3 py-3 has-checked:border-brand has-checked:bg-brand-soft"
             >
               <input
                 type="radio"
@@ -150,7 +158,7 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
           ))}
         </div>
         {fieldErrors.vehicleId && (
-          <p id={vehicleErrorId} role="alert" className={`mt-2 ${errorTextClass}`}>
+          <p id={vehicleErrorId} role="alert" className="mt-2 text-sm text-overdue">
             {fieldErrors.vehicleId}
           </p>
         )}
@@ -183,11 +191,11 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
             Choose file
           </label>
         </div>
-        <p id={fileStatusId} className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+        <p id={fileStatusId} className="mt-2 text-sm text-ink-3">
           {file ? `Selected: ${file.name}` : 'No file selected.'}
         </p>
         {fieldErrors.file && (
-          <p id={fileErrorId} role="alert" className={`mt-1 ${errorTextClass}`}>
+          <p id={fileErrorId} role="alert" className="mt-1 text-sm text-overdue">
             {fieldErrors.file}
           </p>
         )}
@@ -195,23 +203,23 @@ function ReceiptUploadForm({ vehicles }: { vehicles: VehiclesResponse['vehicles'
           <img
             src={previewUrl}
             alt="Selected receipt"
-            className="mt-3 max-h-80 rounded-md border border-zinc-200 object-contain dark:border-zinc-800"
+            className="mt-3 max-h-80 rounded-md border border-line object-contain"
           />
         )}
         {file?.type === 'application/pdf' && (
-          <p className="mt-3 rounded-md border border-zinc-200 px-3 py-6 text-center text-sm dark:border-zinc-800">
+          <p className="mt-3 rounded-md border border-line bg-surface px-3 py-6 text-center text-sm">
             PDF
           </p>
         )}
       </div>
 
       {formError && (
-        <p role="alert" className={errorTextClass}>
+        <p role="alert" className="text-sm text-overdue">
           {formError}
         </p>
       )}
       <div>
-        <button type="submit" disabled={busy} className={`${primaryButtonClass} w-full py-3`}>
+        <button type="submit" disabled={busy} className={cn(buttonVariants({ size: 'lg' }), 'w-full')}>
           {phase === 'idle' ? 'Upload' : PHASE_LABELS[phase]}
         </button>
         {busy && (
@@ -233,7 +241,7 @@ export function ReceiptUploadPage() {
     >
       {(data) => (
         <>
-          <h1 className="mb-6 text-2xl font-semibold">Add receipt</h1>
+          <h1 className="mb-6 text-[26px] font-bold">Add receipt</h1>
           <ReceiptUploadForm vehicles={data.vehicles} />
         </>
       )}

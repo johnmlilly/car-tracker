@@ -1,5 +1,154 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/* Dark mode follows the saved setting only, never the OS (light is the default). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Slate tokens from prototypes/theme.css. The prototype's --accent is --brand here
+   because shadcn uses --accent for hover surfaces. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --scrim: rgba(15, 23, 42, 0.4);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-drawer: -8px 0 24px rgba(15, 23, 42, 0.1);
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;
+  --brand: #4a5f80;
+  --brand-text: #3e5272;
+  --brand-ink: #ffffff;
+  --brand-soft: rgba(74, 95, 128, 0.1);
+  --ok: #3f7a5a;
+  --ok-soft: rgba(63, 122, 90, 0.1);
+  --soon: #94650f;
+  --soon-bar: #c99a45;
+  --soon-soft: rgba(201, 154, 69, 0.14);
+  --overdue: #b0463c;
+  --overdue-soft: rgba(176, 70, 60, 0.09);
+  /* Vehicle photos are cutouts on white; they blend onto this light panel in both themes. */
+  --photo: #ffffff;
+
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-ink);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--overdue);
+  --border: var(--line);
+  --input: var(--line-strong);
+  --ring: var(--brand);
+  --radius: 14px;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e131a;
+  --bg-2: #121821;
+  --surface: #161d27;
+  --surface-2: #1c2430;
+  --line: rgba(226, 232, 240, 0.08);
+  --line-strong: rgba(226, 232, 240, 0.16);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-drawer: -8px 0 28px rgba(0, 0, 0, 0.45);
+  --ink: #e6eaf0;
+  --ink-2: #a4aebc;
+  --ink-3: #7d8898;
+  --brand: #8fa4c4;
+  --brand-text: #a8bad6;
+  --brand-ink: #0e131a;
+  --brand-soft: rgba(143, 164, 196, 0.14);
+  --ok: #82bf9c;
+  --ok-soft: rgba(130, 191, 156, 0.12);
+  --soon: #d8b36d;
+  --soon-bar: #d8b36d;
+  --soon-soft: rgba(216, 179, 109, 0.13);
+  --overdue: #e08b81;
+  --overdue-soft: rgba(224, 139, 129, 0.12);
+  --photo: #d6dce4;
+}
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-scrim: var(--scrim);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-soon: var(--soon);
+  --color-soon-bar: var(--soon-bar);
+  --color-soon-soft: var(--soon-soft);
+  --color-overdue: var(--overdue);
+  --color-overdue-soft: var(--overdue-soft);
+  --color-photo: var(--photo);
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-drawer: var(--shadow-drawer);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
 }

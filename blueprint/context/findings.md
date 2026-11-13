@@ -102,3 +102,26 @@ are sniffed and served with `nosniff` + `sandbox` CSP; R2/D1 write order is
 object then row on create, row then object on delete; D1/R2 route tests use
 `startPlatform()` in `*.d1.test.ts` files, covered by `tsconfig.d1test.json`.
 **Resolution:**
+
+### F-08 [P3] open - Overview promises Edit on history rows; spec puts Edit out of scope
+
+**File:** blueprint/context/project-overview.md:243
+**Found:** 2026-11-13 by /audit independent (scope: current; lens: quality)
+**Why it matters:** The service history passage rewritten in this delta says a
+row "expands to its line items with amounts, Edit, and Delete". The spec's Out of
+scope section says there is no update endpoint, ships Delete only, and asks for
+Edit to be recorded as a follow-up. No follow-up exists in `build-plan.md`, so a
+later feature reading the overview could assume Edit shipped or treat it as
+already planned.
+**Suggested fix:** Either add an "Edit a service record" follow-up line to
+`blueprint/build-plan.md` and mark the overview passage as planned, or drop "Edit"
+from the overview sentence. No current requirement is lost.
+**Resolution:**
+
+### F-12 [P3] open - Root tsconfig adds a deprecated `baseUrl` that errors under TypeScript 6
+
+**File:** tsconfig.json:10
+**Found:** 2026-11-13 by /audit independent (scope: current; lens: quality)
+**Why it matters:** This delta adds `compilerOptions.baseUrl: "."` (plus `paths`) to the solution-style root `tsconfig.json` so the shadcn CLI can find the `@/` alias. TypeScript 6 deprecates `baseUrl`: `npx tsc -p tsconfig.json --noEmit` fails with TS5101 ("Option 'baseUrl' is deprecated..."). `npm run build` (`tsc -b`) does not surface it, but editors load the root config for files outside the referenced projects and report the error, and a later `shadcn add` or TS 7 upgrade inherits a broken option.
+**Suggested fix:** Delete the `"baseUrl": "."` line and keep `"paths": { "@/*": ["./src/*"] }` (paths resolve relative to the config file without `baseUrl` since TS 4.1). No current requirement is lost; `tsconfig.app.json` already carries the alias the build uses.
+**Resolution:**

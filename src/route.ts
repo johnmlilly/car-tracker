@@ -3,8 +3,6 @@ import { useSyncExternalStore } from 'react'
 export type Route =
   | { name: 'home' }
   | { name: 'vehicle'; id: number }
-  | { name: 'odometer'; id: number }
-  | { name: 'minder'; id: number }
   | { name: 'services'; id: number }
   | { name: 'receipts' }
   | { name: 'receiptNew' }
@@ -17,15 +15,18 @@ export function matchRoute(pathname: string): Route {
   if (/^\/receipts\/new\/?$/.test(pathname)) return { name: 'receiptNew' }
   const review = /^\/receipts\/([1-9]\d{0,9})\/review\/?$/.exec(pathname)
   if (review) return { name: 'receiptReview', id: Number(review[1]) }
-  const vehicle = /^\/vehicles\/([1-9]\d{0,9})\/?$/.exec(pathname)
+  // The odometer and Minder pages became drawers on the vehicle page; keep old links working.
+  const vehicle = /^\/vehicles\/([1-9]\d{0,9})(?:\/(?:odometer|minder))?\/?$/.exec(pathname)
   if (vehicle) return { name: 'vehicle', id: Number(vehicle[1]) }
-  const odometer = /^\/vehicles\/([1-9]\d{0,9})\/odometer\/?$/.exec(pathname)
-  if (odometer) return { name: 'odometer', id: Number(odometer[1]) }
-  const minder = /^\/vehicles\/([1-9]\d{0,9})\/minder\/?$/.exec(pathname)
-  if (minder) return { name: 'minder', id: Number(minder[1]) }
   const services = /^\/vehicles\/([1-9]\d{0,9})\/services\/?$/.exec(pathname)
   if (services) return { name: 'services', id: Number(services[1]) }
   return { name: 'notFound' }
+}
+
+/** The `vehicle` query parameter as a vehicle id, e.g. "?vehicle=2" -> 2; null when absent or invalid. */
+export function vehicleParam(search: string): number | null {
+  const value = new URLSearchParams(search).get('vehicle')
+  return value !== null && /^[1-9]\d{0,9}$/.test(value) ? Number(value) : null
 }
 
 /** `state` rides on the history entry, e.g. a one-time status message. */

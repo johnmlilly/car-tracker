@@ -20,8 +20,9 @@ Do not renumber completed features; their archived specs refer to these IDs.
 - [x] 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword mapping to services, side-by-side review, Minder code mismatch flag
   - [x] 7a. **Receipt reading** - read each receipt with `extractReceipt()` (Haiku 5.5) right after upload, validate the output, map line items to services by keyword, store it, and move the receipt to review; retry when reading fails
   - [x] 7b. **Receipt review and confirm** - receipt image beside editable fields, Minder code mismatch flag, Confirm writes the service record linked to its receipt; add a Transmission fluid schedule item to the Corolla only (60,000 mi / 72 months)
-- [ ] 8. **Bulk import** - upload many past receipts and confirm them from a quick-review list; historical Minder codes record history only
+- [x] 8. **UI refresh** - muted slate theme (flat slate-blue accent, system font with tabular numbers, lucide icons), light by default with a Light/Dark choice in a settings menu saved per device; adopt shadcn/ui as the component base (copied into `src/components/ui/`: Button, Badge, Input, Select, Sheet and Drawer for the side drawer and phone bottom sheet, Dialog for the receipt viewer, Table), themed with the slate tokens; last done, add service, odometer, and Minder code inputs open in a side drawer (bottom sheet on phone); service cards in a 2-column grid, most urgent first, with countdown and progress bar; home vehicle cards with bundled photos, ODO, overdue/soon chips, next due item; odometer and Minder pages fold into drawers; per-vehicle service history page (full list grouped by year: date, work done with service tags, shop, miles, cost; search and service filters; row expands to line items; receipt thumbnails open images in a viewer and PDFs in a new tab); whole app restyled. Design reference: `prototypes/`
+- [ ] 9. **Bulk import** - upload many past receipts and confirm them from a quick-review list; historical Minder codes record history only
 
 ### Milestone 3 - Reminders
 
-- [ ] 9. **Email reminders** - Resend weekly digest (Monday 8am Eastern, only when needed), next-morning overdue alert, stale-odometer nudge
+- [ ] 10. **Email reminders** - Resend weekly digest (Monday 8am Eastern, only when needed), next-morning overdue alert, stale-odometer nudge

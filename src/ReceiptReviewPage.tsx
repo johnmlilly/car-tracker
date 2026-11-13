@@ -4,7 +4,8 @@ import { Link } from './Link'
 import { PageShell } from './PageShell'
 import { navigate } from './route'
 import { ServiceForm, type ExtraFieldHelpers, type ServiceFormValues } from './ServiceForm'
-import { errorTextClass, inputClass } from './styles'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const CHOOSE_CODE = 'Choose which Minder code was serviced.'
 
@@ -32,14 +33,14 @@ function ReceiptImage({ receipt }: { receipt: ReceiptDetail }) {
         <iframe
           src={url}
           title="Receipt PDF"
-          className="h-[70vh] w-full rounded-md border border-zinc-200 dark:border-zinc-800"
+          className="h-[70vh] w-full rounded-md border border-line"
         />
         {/* Some browsers (iPhone Safari) show only the first page inline. */}
         <a
           href={url}
           target="_blank"
           rel="noopener"
-          className="text-sm font-medium underline underline-offset-2"
+          className="text-sm font-semibold text-brand-text hover:underline"
         >
           Open PDF in a new tab
         </a>
@@ -50,7 +51,7 @@ function ReceiptImage({ receipt }: { receipt: ReceiptDetail }) {
     <img
       src={url}
       alt="Receipt"
-      className="w-full rounded-md border border-zinc-200 object-contain dark:border-zinc-800"
+      className="w-full rounded-md border border-line object-contain"
     />
   )
 }
@@ -77,7 +78,7 @@ function MinderField({ code, onCode, receiptCode, openCode, helpers }: MinderFie
         <fieldset
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
-          className="rounded-md border border-amber-400 bg-amber-50 p-3 dark:border-amber-500 dark:bg-amber-950"
+          className="rounded-md border border-soon-bar bg-soon-soft p-3"
         >
           <legend className="px-1 text-sm font-medium">Minder code mismatch</legend>
           <p className="mb-2 text-sm">
@@ -102,10 +103,8 @@ function MinderField({ code, onCode, receiptCode, openCode, helpers }: MinderFie
         </fieldset>
       )}
       <div>
-        <label htmlFor={`${id}-minder`} className="text-sm font-medium">
-          Minder code on receipt (optional)
-        </label>
-        <input
+        <Label htmlFor={`${id}-minder`}>Minder code on receipt (optional)</Label>
+        <Input
           id={`${id}-minder`}
           type="text"
           autoComplete="off"
@@ -117,11 +116,11 @@ function MinderField({ code, onCode, receiptCode, openCode, helpers }: MinderFie
           }}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
-          className={inputClass}
+          className="mt-1.5"
         />
       </div>
       {error && (
-        <p id={errorId('minderCode')} role="alert" className={errorTextClass}>
+        <p id={errorId('minderCode')} role="alert" className="text-sm text-overdue">
           {error}
         </p>
       )}
@@ -141,9 +140,9 @@ function ReviewContent({ receipt }: { receipt: ReceiptDetail }) {
   if (receipt.status !== 'review' || !extraction || !receipt.vehicle) {
     return (
       <>
-        <h1 className="mb-2 text-2xl font-semibold">Review receipt</h1>
+        <h1 className="mb-2 text-[26px] font-bold">Review receipt</h1>
         <p className="mb-4">This receipt isn&apos;t ready to review.</p>
-        <Link href="/receipts" className="text-sm font-medium underline underline-offset-2">
+        <Link href="/receipts" className="text-sm font-semibold text-brand-text hover:underline">
           Back to receipts
         </Link>
       </>
@@ -153,8 +152,8 @@ function ReviewContent({ receipt }: { receipt: ReceiptDetail }) {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-semibold">Review receipt</h1>
-      <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">{vehicle.name}</p>
+      <h1 className="mb-1 text-[26px] font-bold">Review receipt</h1>
+      <p className="mb-6 text-sm text-ink-3">{vehicle.name}</p>
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
           <ReceiptImage receipt={receipt} />
@@ -185,7 +184,7 @@ function ReviewContent({ receipt }: { receipt: ReceiptDetail }) {
           conflictMessage={
             <>
               This receipt was already confirmed or isn&apos;t ready.{' '}
-              <Link href="/receipts" className="underline underline-offset-2">
+              <Link href="/receipts" className="font-semibold text-brand-text hover:underline">
                 Back to receipts
               </Link>
             </>

@@ -1,6 +1,8 @@
+import { Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
 import { apiRequest } from './api'
-import { buttonClass, errorTextClass } from './styles'
+import { FieldError } from './FormBits'
 
 interface ConfirmDeleteProps {
   /** DELETE endpoint; omit for a row that can't be deleted here. */
@@ -13,15 +15,35 @@ interface ConfirmDeleteProps {
 
 /** A list row with a two-step Delete -> Confirm delete / Cancel control. */
 export function ConfirmDelete({ url, label, onDeleted, children }: ConfirmDeleteProps) {
+  return (
+    <li className="py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">{children}</div>
+        {url !== undefined && <DeleteControl url={url} label={label} onDeleted={onDeleted} />}
+      </div>
+    </li>
+  )
+}
+
+interface DeleteControlProps {
+  url: string
+  label: string
+  onDeleted: () => void
+  /** Shows "Delete" next to the icon. */
+  showText?: boolean
+}
+
+/** Delete button that asks for confirmation, then sends DELETE to `url`. */
+export function DeleteControl({ url, label, onDeleted, showText = false }: DeleteControlProps) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function remove(deleteUrl: string) {
+  async function remove() {
     setDeleting(true)
     setError(null)
     try {
-      await apiRequest<void>(deleteUrl, { method: 'DELETE' })
+      await apiRequest<void>(url, { method: 'DELETE' })
       onDeleted()
     } catch (err) {
       console.error(err)
@@ -31,46 +53,42 @@ export function ConfirmDelete({ url, label, onDeleted, children }: ConfirmDelete
   }
 
   return (
-    <li className="py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">{children}</div>
-        {url !== undefined &&
-          (confirming ? (
-            <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                onClick={() => void remove(url)}
-                disabled={deleting}
-                className={`${buttonClass} bg-red-700 text-white dark:bg-red-400 dark:text-zinc-950`}
-                aria-label={`Confirm delete ${label}`}
-              >
-                {deleting ? 'Deleting...' : 'Confirm delete'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirming(false)}
-                disabled={deleting}
-                className={`${buttonClass} border border-zinc-300 dark:border-zinc-700`}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="shrink-0 text-sm font-medium text-red-700 underline underline-offset-2 dark:text-red-300"
-              aria-label={`Delete ${label}`}
-            >
-              Delete
-            </button>
-          ))}
-      </div>
-      {error && (
-        <p role="alert" className={`mt-1 ${errorTextClass}`}>
-          {error}
-        </p>
+    <div className="grid shrink-0 justify-items-end">
+      {confirming ? (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => void remove()}
+            disabled={deleting}
+            aria-label={`Confirm delete ${label}`}
+          >
+            {deleting ? 'Deleting...' : 'Confirm delete'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setConfirming(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size={showText ? 'sm' : 'icon'}
+          onClick={() => setConfirming(true)}
+          aria-label={`Delete ${label}`}
+        >
+          <Trash2 aria-hidden />
+          {showText && 'Delete'}
+        </Button>
       )}
-    </li>
+      <FieldError message={error} />
+    </div>
   )
 }

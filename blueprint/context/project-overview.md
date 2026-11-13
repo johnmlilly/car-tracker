@@ -1,6 +1,6 @@
 # car-tracker - Project Overview
 
-<!-- blueprint:source-hash 291fbb610c332208dc5aa31dd08c348aab940625f3e29309444c4b55f25688a8 -->
+<!-- blueprint:source-hash f290024dac70ca8939de4283fb6755dfbf984fb5af155116346bd9ccb16f8a32 -->
 
 > Personal, single-user PWA that tracks maintenance for a 2024 Honda Odyssey and a
 > 2019 Toyota Corolla: service history from receipt photos, what's due, and email
@@ -90,10 +90,12 @@ Milestone 2 - Receipts
    stored in R2.
 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword
    mapping to services, side-by-side review, Minder code mismatch flag.
-8. **Bulk import** - upload many past receipts; confirm from a quick-review list.
+8. **UI refresh** - muted slate theme, light by default with a dark option; inputs in
+   side drawers (bottom sheet on phone); 2-column service card grid; vehicle photos.
+9. **Bulk import** - upload many past receipts; confirm from a quick-review list.
 
 Milestone 3 - Reminders
-9. **Email reminders** - Resend weekly digest, next-morning overdue alert,
+10. **Email reminders** - Resend weekly digest, next-morning overdue alert,
    stale-odometer nudge.
 
 Non-goals (MVP): multiple users or sharing; offline mode or upload queue; push
@@ -201,6 +203,8 @@ populating a review; it never writes records directly.
 
 - **React 19 + TypeScript (strict) + Vite** - client SPA, installable PWA, online only
 - **Tailwind CSS v4** - styling
+- **shadcn/ui** (from feature 8) - copied-in Radix-based components for buttons,
+  inputs, drawers, bottom sheets, and dialogs, themed with the app's tokens
 - **Hono on Cloudflare Workers** - API; same Worker serves the built client
 - **Cloudflare D1 + Drizzle** - database and migrations
 - **Cloudflare R2** - receipt images and PDFs
@@ -216,19 +220,35 @@ None. Personal tool.
 
 ## UI/UX
 
-Clean, utilitarian, mobile-first; follows system light/dark. Status uses color plus
-a text label, never color alone.
+Calm and muted: light by default, with a dark option in a small settings menu
+(saved per device). Cool slate neutrals, one flat slate-blue accent (no gradients),
+softer status colors, system font throughout with tabular numbers for mileage and
+costs, 14px card radius, light shadows, pill buttons, lucide line icons. Mobile-first;
+status uses color plus a text label, never color alone. Inputs (last done, add
+service, odometer, Minder code) open in a right-side drawer on desktop and a bottom
+sheet on phone instead of inline forms or separate pages. Design reference:
+`prototypes/`; the app's live tokens are in `src/index.css`.
 
-- **Home** - two vehicle cards: estimated mileage, count of soon/overdue items.
-  Prominent **Add receipt** action in thumb reach; secondary: log odometer, log
-  Minder code, manual entry.
-- **Vehicle detail** - all items with status, last done, next due.
+- **Home** - two vehicle cards: bundled photo, estimated mileage, overdue/soon
+  chips, next due item. Prominent **Add receipt** action in thumb reach.
+- **Vehicle detail** - header with photo, ODO, and pill actions (Add service, Log
+  odometer, Log Minder code); service cards in a 2-column grid (1 on phone), most
+  urgent first, each with icon, countdown, interval progress bar, last done / next
+  due. Minder due items sit in the same grid with a code chip.
+- **Service history** - own page per vehicle, linked from the vehicle header. Full
+  list, newest first, grouped by year with a yearly count and total; summary of
+  services, total spent, last service, and receipt count. Each row shows date, work
+  done (service tags plus line-item descriptions), shop, miles, cost, and a receipt
+  thumbnail. Search plus service-group filters and a "has receipt" toggle. A row
+  expands to its line items with amounts, Edit, and Delete. Image receipts open in
+  a viewer (bottom sheet on phone); PDFs open in a new tab. Rows stack on phone.
+  Add service opens the drawer.
 - **Receipt review** - receipt image beside editable fields; Confirm writes the
   record.
 - **Bulk quick-review list** - one editable row per receipt (date, shop, odometer,
   services), batch confirm, full review on demand. Designed for laptop width.
-- **Interval baselines** (both vehicles), **odometer log**, **Minder code log**, **manual entry**
-  forms.
+- **Drawers** - last done, add service, log odometer (with recent readings), log
+  Minder code (with recent codes).
 
 > TODO: route paths are not set in the plan; choose them in feature 1.
 

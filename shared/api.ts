@@ -1,3 +1,5 @@
+import type { Countdown } from './scheduleView'
+
 export type ScheduleModel = 'interval' | 'minder'
 
 export type ItemStatus = 'ok' | 'soon' | 'overdue' | 'unknown'
@@ -8,6 +10,17 @@ export interface Vehicle {
   scheduleModel: ScheduleModel
   attention: { soon: number; overdue: number } | null
   mileage: MileageSummary | null
+  /** Most urgent tracked item; null when nothing has a known status. */
+  nextDue: NextDueView | null
+}
+
+export interface NextDueView {
+  serviceName: string
+  status: ItemStatus
+  /** Open Minder code that made this item due, when there is one. */
+  minder: { code: string; date: string } | null
+  /** Interval progress; null for a Minder-only item. */
+  countdown: Countdown | null
 }
 
 export interface ScheduleItemView {
@@ -102,6 +115,8 @@ export interface ServiceRecordView {
   shop: string | null
   totalCents: number | null
   source: 'manual' | 'receipt' | 'import'
+  /** The confirmed receipt this record came from; null for manual entries. */
+  receipt: { id: number; contentType: ReceiptContentType } | null
   /** In entry order. */
   items: ServiceItemView[]
 }

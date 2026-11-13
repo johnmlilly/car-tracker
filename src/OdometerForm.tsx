@@ -1,7 +1,11 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { Check } from 'lucide-react'
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { OdometerResponse } from '../shared/api'
 import { submitJson } from './api'
-import { errorTextClass, inputClass, primaryButtonClass } from './styles'
+import { FieldError, FormActions } from './FormBits'
 
 type Fields = Partial<Record<'date' | 'odometer', string>>
 
@@ -9,9 +13,18 @@ interface OdometerFormProps {
   vehicleId: number
   today: string
   onSaved: () => void
+  onCancel: () => void
+  /** Shown between the fields and the actions, e.g. recent readings. */
+  children?: ReactNode
 }
 
-export function OdometerForm({ vehicleId, today, onSaved }: OdometerFormProps) {
+export function OdometerForm({
+  vehicleId,
+  today,
+  onSaved,
+  onCancel,
+  children,
+}: OdometerFormProps) {
   const id = useId()
   const [date, setDate] = useState(today)
   const [odometer, setOdometer] = useState('')
@@ -59,32 +72,11 @@ export function OdometerForm({ vehicleId, today, onSaved }: OdometerFormProps) {
   const odometerErrorId = `${id}-odometer-error`
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="grid gap-3">
+    <form onSubmit={handleSubmit} noValidate className="grid gap-4">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={`${id}-date`} className="text-sm font-medium">
-            Date
-          </label>
-          <input
-            id={`${id}-date`}
-            ref={dateRef}
-            type="date"
-            max={today}
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value)
-              setFieldErrors((f) => ({ ...f, date: undefined }))
-            }}
-            aria-invalid={Boolean(fieldErrors.date)}
-            aria-describedby={fieldErrors.date ? dateErrorId : undefined}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label htmlFor={`${id}-odometer`} className="text-sm font-medium">
-            Odometer (miles)
-          </label>
-          <input
+        <div className="grid gap-1.5">
+          <Label htmlFor={`${id}-odometer`}>Reading (miles)</Label>
+          <Input
             id={`${id}-odometer`}
             ref={odometerRef}
             type="number"
@@ -98,30 +90,38 @@ export function OdometerForm({ vehicleId, today, onSaved }: OdometerFormProps) {
             }}
             aria-invalid={Boolean(fieldErrors.odometer)}
             aria-describedby={fieldErrors.odometer ? odometerErrorId : undefined}
-            className={inputClass}
+          />
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor={`${id}-date`}>Date</Label>
+          <Input
+            id={`${id}-date`}
+            ref={dateRef}
+            type="date"
+            max={today}
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value)
+              setFieldErrors((f) => ({ ...f, date: undefined }))
+            }}
+            aria-invalid={Boolean(fieldErrors.date)}
+            aria-describedby={fieldErrors.date ? dateErrorId : undefined}
           />
         </div>
       </div>
-      {fieldErrors.date && (
-        <p id={dateErrorId} role="alert" className={errorTextClass}>
-          {fieldErrors.date}
-        </p>
-      )}
-      {fieldErrors.odometer && (
-        <p id={odometerErrorId} role="alert" className={errorTextClass}>
-          {fieldErrors.odometer}
-        </p>
-      )}
-      {formError && (
-        <p role="alert" className={errorTextClass}>
-          {formError}
-        </p>
-      )}
-      <div>
-        <button type="submit" disabled={saving} className={primaryButtonClass}>
-          {saving ? 'Saving...' : 'Log reading'}
-        </button>
-      </div>
+      <FieldError id={odometerErrorId} message={fieldErrors.odometer} />
+      <FieldError id={dateErrorId} message={fieldErrors.date} />
+      <FieldError message={formError} />
+      {children}
+      <FormActions>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={saving}>
+          <Check aria-hidden />
+          {saving ? 'Saving...' : 'Save reading'}
+        </Button>
+      </FormActions>
     </form>
   )
 }

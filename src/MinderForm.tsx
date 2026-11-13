@@ -1,11 +1,23 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { Check } from 'lucide-react'
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { MinderResponse } from '../shared/api'
 import { submitJson } from './api'
-import { errorTextClass, inputClass, primaryButtonClass } from './styles'
+import { FieldError, FormActions } from './FormBits'
 
 type Fields = Partial<Record<'code' | 'odometer', string>>
 
-export function MinderForm({ vehicleId, onSaved }: { vehicleId: number; onSaved: () => void }) {
+interface MinderFormProps {
+  vehicleId: number
+  onSaved: () => void
+  onCancel: () => void
+  /** Shown between the fields and the actions, e.g. recent codes. */
+  children?: ReactNode
+}
+
+export function MinderForm({ vehicleId, onSaved, onCancel, children }: MinderFormProps) {
   const id = useId()
   const [code, setCode] = useState('')
   const [odometer, setOdometer] = useState('')
@@ -53,13 +65,11 @@ export function MinderForm({ vehicleId, onSaved }: { vehicleId: number; onSaved:
   const odometerErrorId = `${id}-odometer-error`
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="grid gap-3">
+    <form onSubmit={handleSubmit} noValidate className="grid gap-4">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={`${id}-code`} className="text-sm font-medium">
-            Minder code
-          </label>
-          <input
+        <div className="grid gap-1.5">
+          <Label htmlFor={`${id}-code`}>Minder code</Label>
+          <Input
             id={`${id}-code`}
             type="text"
             autoCapitalize="characters"
@@ -72,17 +82,14 @@ export function MinderForm({ vehicleId, onSaved }: { vehicleId: number; onSaved:
             }}
             aria-invalid={Boolean(fieldErrors.code)}
             aria-describedby={fieldErrors.code ? `${codeHelpId} ${codeErrorId}` : codeHelpId}
-            className={inputClass}
           />
-          <p id={codeHelpId} className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          <p id={codeHelpId} className="text-xs text-ink-3">
             As shown on the dash, e.g. B12
           </p>
         </div>
-        <div>
-          <label htmlFor={`${id}-odometer`} className="text-sm font-medium">
-            Odometer (optional)
-          </label>
-          <input
+        <div className="grid content-start gap-1.5">
+          <Label htmlFor={`${id}-odometer`}>Odometer (optional)</Label>
+          <Input
             id={`${id}-odometer`}
             ref={odometerRef}
             type="number"
@@ -96,30 +103,22 @@ export function MinderForm({ vehicleId, onSaved }: { vehicleId: number; onSaved:
             }}
             aria-invalid={Boolean(fieldErrors.odometer)}
             aria-describedby={fieldErrors.odometer ? odometerErrorId : undefined}
-            className={inputClass}
           />
         </div>
       </div>
-      {fieldErrors.code && (
-        <p id={codeErrorId} role="alert" className={errorTextClass}>
-          {fieldErrors.code}
-        </p>
-      )}
-      {fieldErrors.odometer && (
-        <p id={odometerErrorId} role="alert" className={errorTextClass}>
-          {fieldErrors.odometer}
-        </p>
-      )}
-      {formError && (
-        <p role="alert" className={errorTextClass}>
-          {formError}
-        </p>
-      )}
-      <div>
-        <button type="submit" disabled={saving} className={primaryButtonClass}>
+      <FieldError id={codeErrorId} message={fieldErrors.code} />
+      <FieldError id={odometerErrorId} message={fieldErrors.odometer} />
+      <FieldError message={formError} />
+      {children}
+      <FormActions>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={saving}>
+          <Check aria-hidden />
           {saving ? 'Saving...' : 'Log code'}
-        </button>
-      </div>
+        </Button>
+      </FormActions>
     </form>
   )
 }

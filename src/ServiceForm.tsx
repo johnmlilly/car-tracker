@@ -1,8 +1,12 @@
+import { Check, Plus, X } from 'lucide-react'
 import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { ServiceRecordInput } from '../shared/api'
-import { parseDollarsToCents } from '../shared/money'
+import { formatCents, parseDollarsToCents } from '../shared/money'
 import { submitJson } from './api'
-import { buttonClass, errorTextClass, inputClass, primaryButtonClass } from './styles'
+import { FieldError, FormActions, NativeSelect } from './FormBits'
 
 interface Line {
   key: number
@@ -51,6 +55,8 @@ interface ServiceFormProps {
   conflictMessage?: ReactNode
   /** Clear the form and show "Service saved." after saving (manual entry). */
   resetOnSave?: boolean
+  /** In a drawer: adds Cancel and pins the actions to the drawer bottom. */
+  onCancel?: () => void
 }
 
 const AMOUNT_MESSAGE = 'Enter dollars and cents, like 49.99.'
@@ -58,14 +64,7 @@ const AMOUNT_MESSAGE = 'Enter dollars and cents, like 49.99.'
 let nextKey = 1
 const newLine = (): Line => ({ key: nextKey++, serviceId: '', description: '', amount: '' })
 
-function ErrorText({ id, message }: { id: string; message: string | undefined }) {
-  if (!message) return null
-  return (
-    <p id={id} role="alert" className={`mt-1 ${errorTextClass}`}>
-      {message}
-    </p>
-  )
-}
+const ErrorText = FieldError
 
 export function ServiceForm({
   vehicleId,
@@ -80,6 +79,7 @@ export function ServiceForm({
   renderExtra,
   conflictMessage,
   resetOnSave = true,
+  onCancel,
 }: ServiceFormProps) {
   const id = useId()
   const [date, setDate] = useState(initial?.date ?? today)
@@ -214,17 +214,20 @@ export function ServiceForm({
     })
   }
 
+  const amounts = lines.map((line) => (line.amount.trim() === '' ? null : parseDollarsToCents(line.amount)))
+  const lineSum = amounts.some((a) => a !== null)
+    ? amounts.reduce<number>((sum, a) => sum + (a ?? 0), 0)
+    : null
+
   const errorId = (key: string) => `${id}-${key.replace(/\./g, '-')}-error`
   const describe = (key: string) => (fieldErrors[key] ? errorId(key) : undefined)
 
   return (
     <form onSubmit={handleSubmit} noValidate className="grid gap-4">
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={`${id}-date`} className="text-sm font-medium">
-            Date
-          </label>
-          <input
+        <div className="grid content-start gap-1.5">
+          <Label htmlFor={`${id}-date`}>Date</Label>
+          <Input
             id={`${id}-date`}
             ref={dateRef}
             type="date"
@@ -236,15 +239,12 @@ export function ServiceForm({
             }}
             aria-invalid={Boolean(fieldErrors.date)}
             aria-describedby={describe('date')}
-            className={inputClass}
           />
           <ErrorText id={errorId('date')} message={fieldErrors.date} />
         </div>
-        <div>
-          <label htmlFor={`${id}-odometer`} className="text-sm font-medium">
-            Odometer (optional)
-          </label>
-          <input
+        <div className="grid content-start gap-1.5">
+          <Label htmlFor={`${id}-odometer`}>Odometer (optional)</Label>
+          <Input
             id={`${id}-odometer`}
             ref={odometerRef}
             type="number"
@@ -258,15 +258,12 @@ export function ServiceForm({
             }}
             aria-invalid={Boolean(fieldErrors.odometer)}
             aria-describedby={describe('odometer')}
-            className={inputClass}
           />
           <ErrorText id={errorId('odometer')} message={fieldErrors.odometer} />
         </div>
-        <div>
-          <label htmlFor={`${id}-shop`} className="text-sm font-medium">
-            Shop (optional)
-          </label>
-          <input
+        <div className="grid content-start gap-1.5">
+          <Label htmlFor={`${id}-shop`}>Shop (optional)</Label>
+          <Input
             id={`${id}-shop`}
             type="text"
             maxLength={100}
@@ -278,15 +275,12 @@ export function ServiceForm({
             }}
             aria-invalid={Boolean(fieldErrors.shop)}
             aria-describedby={describe('shop')}
-            className={inputClass}
           />
           <ErrorText id={errorId('shop')} message={fieldErrors.shop} />
         </div>
-        <div>
-          <label htmlFor={`${id}-total`} className="text-sm font-medium">
-            Total $ (optional)
-          </label>
-          <input
+        <div className="grid content-start gap-1.5">
+          <Label htmlFor={`${id}-total`}>Total $ (optional)</Label>
+          <Input
             id={`${id}-total`}
             type="text"
             inputMode="decimal"
@@ -298,27 +292,40 @@ export function ServiceForm({
             }}
             aria-invalid={Boolean(fieldErrors.totalCents)}
             aria-describedby={describe('totalCents')}
-            className={inputClass}
           />
           <ErrorText id={errorId('totalCents')} message={fieldErrors.totalCents} />
         </div>
       </div>
 
       <fieldset className="grid gap-3">
-        <legend className="mb-2 text-sm font-medium">Line items</legend>
+        <legend className="mb-2 text-[13px] font-bold text-ink-2">Line items</legend>
         {lines.map((line, index) => {
           const n = index + 1
           const key = (name: string) => `items.${index}.${name}`
           return (
             <div
               key={line.key}
-              className="grid gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+              className="grid gap-2 rounded-md border border-line bg-surface-2 p-3 [&_input]:bg-surface [&_select]:bg-surface"
             >
-              <div>
-                <label htmlFor={`${id}-${line.key}-service`} className="text-sm font-medium">
-                  Service <span className="sr-only">for line {n}</span>
-                </label>
-                <select
+              <div className="grid gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor={`${id}-${line.key}-service`}>
+                    Service <span className="sr-only">for line {n}</span>
+                  </Label>
+                  {lines.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeLine(index)}
+                      className="-my-1 text-ink-3"
+                    >
+                      <X aria-hidden />
+                      Remove <span className="sr-only">line {n}</span>
+                    </Button>
+                  )}
+                </div>
+                <NativeSelect
                   id={`${id}-${line.key}-service`}
                   ref={(el) => {
                     if (!el) {
@@ -335,7 +342,6 @@ export function ServiceForm({
                   onChange={(e) => pickService(index, e.target.value)}
                   aria-invalid={Boolean(fieldErrors[key('serviceId')])}
                   aria-describedby={describe(key('serviceId'))}
-                  className={inputClass}
                 >
                   <option value="">Other (not tracked)</option>
                   {services.map((s) => (
@@ -343,15 +349,15 @@ export function ServiceForm({
                       {s.name}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
                 <ErrorText id={errorId(key('serviceId'))} message={fieldErrors[key('serviceId')]} />
               </div>
               <div className="grid grid-cols-[1fr_7rem] gap-2">
-                <div>
-                  <label htmlFor={`${id}-${line.key}-description`} className="text-sm font-medium">
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${id}-${line.key}-description`}>
                     Description <span className="sr-only">for line {n}</span>
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id={`${id}-${line.key}-description`}
                     type="text"
                     maxLength={200}
@@ -360,14 +366,13 @@ export function ServiceForm({
                     onChange={(e) => updateLine(index, { description: e.target.value }, 'description')}
                     aria-invalid={Boolean(fieldErrors[key('description')])}
                     aria-describedby={describe(key('description'))}
-                    className={inputClass}
                   />
                 </div>
-                <div>
-                  <label htmlFor={`${id}-${line.key}-amount`} className="text-sm font-medium">
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${id}-${line.key}-amount`}>
                     Amount $ <span className="sr-only">for line {n}</span>
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id={`${id}-${line.key}-amount`}
                     type="text"
                     inputMode="decimal"
@@ -376,7 +381,7 @@ export function ServiceForm({
                     onChange={(e) => updateLine(index, { amount: e.target.value }, 'amountCents')}
                     aria-invalid={Boolean(fieldErrors[key('amountCents')])}
                     aria-describedby={describe(key('amountCents'))}
-                    className={inputClass}
+                    className="text-right"
                   />
                 </div>
               </div>
@@ -388,47 +393,48 @@ export function ServiceForm({
                 id={errorId(key('amountCents'))}
                 message={fieldErrors[key('amountCents')]}
               />
-              {lines.length > 1 && (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => removeLine(index)}
-                    className="text-sm font-medium text-red-700 underline underline-offset-2 dark:text-red-300"
-                  >
-                    Remove <span className="sr-only">line {n}</span>
-                  </button>
-                </div>
-              )}
             </div>
           )
         })}
         <ErrorText id={errorId('items')} message={fieldErrors.items} />
         <div>
-          <button
-            type="button"
-            onClick={addLine}
-            className={`${buttonClass} border border-zinc-300 dark:border-zinc-700`}
-          >
-            Add line
-          </button>
+          <Button type="button" variant="link" onClick={addLine}>
+            <Plus aria-hidden />
+            Add line item
+          </Button>
         </div>
+        {lineSum !== null && (
+          <p className="flex items-baseline justify-between border-t border-dashed border-line-strong px-1 pt-3">
+            <span className="text-ink-2">Line items total</span>
+            <strong className="text-xl">{formatCents(lineSum)}</strong>
+          </p>
+        )}
       </fieldset>
 
       {renderExtra?.({ fieldErrors, errorId, clearError: (key) => edited(key) })}
 
-      {formError && (
-        <p role="alert" className={errorTextClass}>
-          {formError}
-        </p>
+      <FieldError message={formError} />
+      {onCancel ? (
+        <FormActions>
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            <Check aria-hidden />
+            {saving ? 'Saving...' : submitLabel}
+          </Button>
+        </FormActions>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={saving}>
+            <Check aria-hidden />
+            {saving ? 'Saving...' : submitLabel}
+          </Button>
+          <p role="status" className="text-sm text-ok">
+            {saved ? 'Service saved.' : ''}
+          </p>
+        </div>
       )}
-      <div className="flex items-center gap-3">
-        <button type="submit" disabled={saving} className={primaryButtonClass}>
-          {saving ? 'Saving...' : submitLabel}
-        </button>
-        <p role="status" className="text-sm text-emerald-700 dark:text-emerald-300">
-          {saved ? 'Service saved.' : ''}
-        </p>
-      </div>
     </form>
   )
 }

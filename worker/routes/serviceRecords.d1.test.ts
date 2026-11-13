@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ServiceRecordsResponse } from '../../shared/api'
 import { todayInEastern } from '../../shared/schedule'
 import app from '../index'
 import { startPlatform } from '../test/platform'
@@ -91,6 +92,8 @@ describe('service record routes against D1', () => {
       ],
     })
     expect(res.status).toBe(201)
+    const created = (await res.json()) as ServiceRecordsResponse
+    expect(created.records[0].receipt).toBeNull()
 
     const [oilLine] = await itemIdsFor(await latestRecordId())
     expect(await dueItemState()).toEqual({ 'Oil and filter change': oilLine, 'Tire rotation': null })

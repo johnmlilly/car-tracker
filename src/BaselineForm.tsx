@@ -1,7 +1,11 @@
+import { Check } from 'lucide-react'
 import { useId, useRef, useState, type FormEvent } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { ScheduleItemResponse, ScheduleItemView } from '../shared/api'
 import { submitJson } from './api'
-import { buttonClass, errorTextClass, inputClass, primaryButtonClass } from './styles'
+import { FieldError, FormActions } from './FormBits'
 
 type Fields = Partial<Record<'baselineDate' | 'baselineOdometer', string>>
 
@@ -60,17 +64,17 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
 
   const dateErrorId = `${id}-date-error`
   const odometerErrorId = `${id}-odometer-error`
+  const hasBaseline = item.baselineDate !== null || item.baselineOdometer !== null
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="mt-3 grid gap-3">
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        When was this last done? Enter a date, mileage, or both.
+    <form onSubmit={handleSubmit} noValidate className="grid gap-4">
+      <p className="text-sm text-ink-3">
+        When was this last done, before any service records in the app? Enter a date,
+        mileage, or both.
       </p>
-      <div>
-        <label htmlFor={`${id}-date`} className="text-sm font-medium">
-          Date
-        </label>
-        <input
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-date`}>Date</Label>
+        <Input
           id={`${id}-date`}
           ref={dateRef}
           type="date"
@@ -82,19 +86,12 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
           }}
           aria-invalid={Boolean(fieldErrors.baselineDate)}
           aria-describedby={fieldErrors.baselineDate ? dateErrorId : undefined}
-          className={inputClass}
         />
-        {fieldErrors.baselineDate && (
-          <p id={dateErrorId} role="alert" className={`mt-1 ${errorTextClass}`}>
-            {fieldErrors.baselineDate}
-          </p>
-        )}
+        <FieldError id={dateErrorId} message={fieldErrors.baselineDate} />
       </div>
-      <div>
-        <label htmlFor={`${id}-odometer`} className="text-sm font-medium">
-          Odometer (miles)
-        </label>
-        <input
+      <div className="grid gap-1.5">
+        <Label htmlFor={`${id}-odometer`}>Odometer (miles)</Label>
+        <Input
           id={`${id}-odometer`}
           ref={odometerRef}
           type="number"
@@ -108,46 +105,30 @@ export function BaselineForm({ item, today, onSaved, onCancel }: BaselineFormPro
           }}
           aria-invalid={Boolean(fieldErrors.baselineOdometer)}
           aria-describedby={fieldErrors.baselineOdometer ? odometerErrorId : undefined}
-          className={inputClass}
         />
-        {fieldErrors.baselineOdometer && (
-          <p id={odometerErrorId} role="alert" className={`mt-1 ${errorTextClass}`}>
-            {fieldErrors.baselineOdometer}
-          </p>
-        )}
+        <FieldError id={odometerErrorId} message={fieldErrors.baselineOdometer} />
       </div>
-      {formError && (
-        <p role="alert" className={errorTextClass}>
-          {formError}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className={primaryButtonClass}
-        >
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className={`${buttonClass} border border-zinc-300 dark:border-zinc-700`}
-        >
-          Cancel
-        </button>
-        {(item.baselineDate !== null || item.baselineOdometer !== null) && (
-          <button
+      <FieldError message={formError} />
+      <FormActions>
+        {hasBaseline && (
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => void save(null, null)}
             disabled={saving}
-            className={`${buttonClass} ml-auto text-red-700 dark:text-red-300`}
+            className="mr-auto text-overdue"
           >
             Clear
-          </button>
+          </Button>
         )}
-      </div>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={saving}>
+          <Check aria-hidden />
+          {saving ? 'Saving...' : 'Save'}
+        </Button>
+      </FormActions>
     </form>
   )
 }

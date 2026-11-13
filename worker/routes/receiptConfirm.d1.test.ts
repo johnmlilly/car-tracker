@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { ReceiptDetail, ReceiptView } from '../../shared/api'
+import type { ReceiptDetail, ReceiptView, ServiceRecordsResponse } from '../../shared/api'
 import { todayInEastern } from '../../shared/schedule'
 import app from '../index'
 import { startPlatform } from '../test/platform'
@@ -128,6 +128,14 @@ describe('receipt confirm against D1', () => {
       { name: 'Tire rotation', closed: 0 },
     ])
     expect(await receiptStatus(id)).toBe('confirmed')
+
+    const history = (await (
+      await app.request(`/api/vehicles/${odyssey}/service-records`, {}, env)
+    ).json()) as ServiceRecordsResponse
+    expect(history.records.find((r) => r.id === recordId)?.receipt).toEqual({
+      id,
+      contentType: expect.stringMatching(/^(image\/webp|application\/pdf)$/),
+    })
   })
 
   it('drops the Minder code for an interval vehicle', async () => {

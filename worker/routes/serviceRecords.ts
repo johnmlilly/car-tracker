@@ -36,8 +36,11 @@ async function serviceRecordsView(
       shop: serviceRecords.shop,
       totalCents: serviceRecords.totalCents,
       source: serviceRecords.source,
+      receiptId: receipts.id,
+      receiptContentType: receipts.contentType,
     })
     .from(serviceRecords)
+    .leftJoin(receipts, eq(receipts.id, serviceRecords.receiptId))
     .where(eq(serviceRecords.vehicleId, vehicle.id))
     .orderBy(desc(serviceRecords.date), desc(serviceRecords.id))
   const items = records.length
@@ -62,8 +65,12 @@ async function serviceRecordsView(
     today,
     services: serviceList,
     records: records.map(
-      (record): ServiceRecordView => ({
+      ({ receiptId, receiptContentType, ...record }): ServiceRecordView => ({
         ...record,
+        receipt:
+          receiptId !== null && receiptContentType !== null
+            ? { id: receiptId, contentType: receiptContentType }
+            : null,
         items: items
           .filter((i) => i.serviceRecordId === record.id)
           .map((i) => ({

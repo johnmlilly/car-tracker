@@ -1,123 +1,131 @@
-import { useState } from 'react'
-import type { DueItemView, ScheduleItemView, VehicleDetailResponse } from '../shared/api'
-import { BaselineForm } from './BaselineForm'
-import { formatDate, formatInterval, formatPoint } from './format'
+import { ChevronRight, Gauge, Plus, Receipt, ScanLine } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import type { Vehicle, VehicleDetailResponse } from '../shared/api'
+import { gridEntries } from '../shared/scheduleView'
+import { describeMileage, SCHEDULE_LABELS } from './format'
 import { Link } from './Link'
-import { MileageText } from './MileageText'
 import { PageShell } from './PageShell'
-import { StatusBadge } from './StatusBadge'
+import { ServiceCard } from './ServiceCard'
+import { useDrawer } from './useDrawer'
+import { VehicleDrawers, type VehicleDrawer } from './VehicleDrawers'
+import { VehiclePhoto } from './VehiclePhoto'
 
-interface RowProps {
-  item: ScheduleItemView
-  today: string
-  onSaved: () => void
+function Odometer({ vehicle }: { vehicle: Vehicle }) {
+  const { mileage } = vehicle
+  if (!mileage) return <p className="my-3 text-ink-3">No mileage logged yet.</p>
+  const { detail } = describeMileage(mileage)
+  return (
+    <p className="my-3 flex flex-wrap items-baseline gap-x-2">
+      <span className="text-[30px] font-bold">{mileage.estimate.toLocaleString('en-US')}</span>
+      <span className="font-semibold text-ink-3">mi</span>
+      {detail && <span className="text-xs text-ink-3">{detail}</span>}
+    </p>
+  )
 }
 
-function ScheduleItemRow({ item, today, onSaved }: RowProps) {
-  const [editing, setEditing] = useState(false)
-  const hasBaseline = item.baselineDate !== null || item.baselineOdometer !== null
-  const hasLastDone = item.lastDoneDate !== null || item.lastDoneOdometer !== null
-  const lastDone = formatPoint(item.lastDoneDate, item.lastDoneOdometer, 'at')
-  const nextDue = formatPoint(item.nextDueDate, item.nextDueMiles)
+function VehicleContent({ data, onChanged }: { data: VehicleDetailResponse; onChanged: () => void }) {
+  const drawer = useDrawer<VehicleDrawer>()
+  const { vehicle } = data
+  const entries = gridEntries(data.items, data.dueItems, vehicle.mileage?.estimate ?? null, data.today)
+  const isMinder = vehicle.scheduleModel === 'minder'
+  const mileageLine = vehicle.mileage
+    ? `Estimated now: ${vehicle.mileage.estimate.toLocaleString('en-US')} mi`
+    : 'No mileage logged yet'
 
   return (
-    <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-medium">{item.serviceName}</h3>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {formatInterval(item.intervalMiles, item.intervalMonths)}
-          </p>
-          {item.minderSince && (
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">
-              Minder {item.minderSince.code} on {formatDate(item.minderSince.date)}
-            </p>
-          )}
-        </div>
-        <StatusBadge status={item.status} hasBaseline={hasLastDone} />
-      </div>
-      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-zinc-500 dark:text-zinc-400">Last done</dt>
-        <dd>{lastDone ?? 'Not set'}</dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Next due</dt>
-        <dd>{nextDue ?? 'Unknown'}</dd>
-      </dl>
-      {editing ? (
-        <BaselineForm
-          item={item}
-          today={today}
-          onCancel={() => setEditing(false)}
-          onSaved={() => {
-            setEditing(false)
-            onSaved()
-          }}
+    <>
+      <section className="mb-8 grid items-center gap-5 sm:grid-cols-[220px_1fr]">
+        <VehiclePhoto
+          name={vehicle.name}
+          className="aspect-video rounded-lg border border-line sm:aspect-[4/3]"
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="mt-3 text-sm font-medium underline underline-offset-2"
-          aria-label={`${hasBaseline ? 'Edit' : 'Set'} last done for ${item.serviceName}`}
-        >
-          {hasBaseline ? 'Edit last done' : 'Set last done'}
-        </button>
-      )}
-    </li>
-  )
-}
-
-function DueItemRow({ item }: { item: DueItemView }) {
-  return (
-    <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-medium">{item.serviceName}</h3>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            From {item.since.code} on {formatDate(item.since.date)}
+          <h1 className="text-[26px] font-bold sm:text-[32px]">{vehicle.name}</h1>
+          <p className="mt-0.5 text-sm text-ink-3">
+            {SCHEDULE_LABELS[vehicle.scheduleModel]} ·{' '}
+            <Link
+              href={`/vehicles/${vehicle.id}/services`}
+              className="inline-flex items-center font-semibold text-brand-text hover:underline"
+            >
+              Service history
+              <ChevronRight className="size-4" aria-hidden />
+            </Link>
           </p>
+          <Odometer vehicle={vehicle} />
+          <div className="grid gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button asChild>
+                <Link href={`/receipts/new?vehicle=${vehicle.id}`}>
+                  <Receipt aria-hidden />
+                  Add receipt
+                </Link>
+              </Button>
+              <Button type="button" onClick={() => drawer.show({ kind: 'service' })}>
+                <Plus aria-hidden />
+                Add service
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => drawer.show({ kind: 'odometer' })}
+              >
+                <Gauge aria-hidden />
+                Log odometer
+              </Button>
+              {isMinder && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => drawer.show({ kind: 'minder' })}
+                >
+                  <ScanLine aria-hidden />
+                  Log Minder code
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-        <StatusBadge status={item.status} hasBaseline />
+      </section>
+
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="text-lg font-bold">Schedule</h2>
+        {entries.length > 1 && <span className="text-[13px] text-ink-3">Most urgent first</span>}
       </div>
-    </li>
-  )
-}
-
-const sectionHeadingClass = 'mb-2 text-lg font-medium'
-
-function VehicleItems({ data, onSaved }: { data: VehicleDetailResponse; onSaved: () => void }) {
-  const isMinder = data.vehicle.scheduleModel === 'minder'
-  if (data.items.length === 0 && data.dueItems.length === 0) {
-    return (
-      <p className="text-zinc-500 dark:text-zinc-400">
-        {isMinder
-          ? 'Nothing due. Log a code when the car shows one.'
-          : 'No interval schedule for this vehicle.'}
-      </p>
-    )
-  }
-  return (
-    <div className="grid gap-6">
-      {data.dueItems.length > 0 && (
-        <section>
-          <h2 className={sectionHeadingClass}>From Minder codes</h2>
-          <ul className="grid gap-3">
-            {data.dueItems.map((item) => (
-              <DueItemRow key={item.serviceName} item={item} />
-            ))}
-          </ul>
-        </section>
+      {entries.length === 0 ? (
+        <p className="text-ink-3">
+          {isMinder
+            ? 'Nothing due. Log a code when the car shows one.'
+            : 'No interval schedule for this vehicle.'}
+        </p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {entries.map((entry) => (
+            <ServiceCard
+              key={entry.kind === 'item' ? `item-${entry.item.id}` : `minder-${entry.item.serviceName}`}
+              entry={entry}
+              today={data.today}
+              onEditLastDone={() => {
+                if (entry.kind === 'item') drawer.show({ kind: 'lastDone', item: entry.item })
+              }}
+            />
+          ))}
+        </ul>
       )}
-      {data.items.length > 0 && (
-        <section>
-          {isMinder && <h2 className={sectionHeadingClass}>Schedule</h2>}
-          <ul className="grid gap-3">
-            {data.items.map((item) => (
-              <ScheduleItemRow key={item.id} item={item} today={data.today} onSaved={onSaved} />
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
+
+      <VehicleDrawers
+        vehicle={vehicle}
+        today={data.today}
+        mileageLine={mileageLine}
+        drawer={drawer.value}
+        open={drawer.open}
+        onOpenChange={drawer.setOpen}
+        onChanged={onChanged}
+      />
+    </>
   )
 }
 
@@ -128,37 +136,7 @@ export function VehiclePage({ id }: { id: number }) {
       loadingText="Loading schedule..."
       errorText="Couldn't load this vehicle."
     >
-      {(data, refresh) => (
-        <>
-          <h1 className="mb-1 text-2xl font-semibold">{data.vehicle.name}</h1>
-          <div className="mb-6 flex items-end justify-between gap-3">
-            <MileageText mileage={data.vehicle.mileage} />
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <Link
-                href={`/vehicles/${id}/services`}
-                className="text-sm font-medium underline underline-offset-2"
-              >
-                Add service
-              </Link>
-              {data.vehicle.scheduleModel === 'minder' && (
-                <Link
-                  href={`/vehicles/${id}/minder`}
-                  className="text-sm font-medium underline underline-offset-2"
-                >
-                  Log Minder code
-                </Link>
-              )}
-              <Link
-                href={`/vehicles/${id}/odometer`}
-                className="text-sm font-medium underline underline-offset-2"
-              >
-                Log odometer
-              </Link>
-            </div>
-          </div>
-          <VehicleItems data={data} onSaved={refresh} />
-        </>
-      )}
+      {(data, refresh) => <VehicleContent data={data} onChanged={refresh} />}
     </PageShell>
   )
 }

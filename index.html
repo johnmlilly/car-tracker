@@ -4,7 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f8fafc" />
     <title>Car Tracker</title>
+    <!-- Apply the saved theme before first paint so dark mode never flashes light. -->
+    <script>
+      try {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.dataset.theme = 'dark'
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0e131a')
+        }
+      } catch (err) {
+        console.warn(err)
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,4 +1,4 @@
-import type { MileageSummary } from '../shared/api'
+import type { ItemStatus, MileageSummary, Vehicle } from '../shared/api'
 import { formatDate, formatMiles } from '../shared/format'
 
 export { formatDate, formatMiles }
@@ -41,4 +41,23 @@ export function describeMileage(mileage: MileageSummary | null): {
     headline: `~${formatMiles(mileage.estimate)}`,
     detail: `Estimated from ${formatMiles(latest.odometer)} on ${formatDate(latest.date)}`,
   }
+}
+
+/** Text paired with a status color. */
+export function statusLabel(status: ItemStatus, hasLastDone: boolean): string {
+  switch (status) {
+    case 'ok':
+      return 'OK'
+    case 'soon':
+      return 'Due soon'
+    case 'overdue':
+      return 'Overdue'
+    case 'unknown':
+      return hasLastDone ? 'Needs mileage' : 'Not set'
+  }
+}
+
+export const SCHEDULE_LABELS: Record<Vehicle['scheduleModel'], string> = {
+  minder: 'Interval schedule + Maintenance Minder',
+  interval: 'Interval schedule',
 }

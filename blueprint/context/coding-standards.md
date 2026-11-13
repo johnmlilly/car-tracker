@@ -43,8 +43,11 @@
 - Client: flat `src/`, one component per file (`HomePage.tsx`,
   `OdometerForm.tsx`). `src/api.ts` holds `apiRequest` and the `useApi` hook,
   `src/route.ts` the history-API router (`matchRoute`, `navigate`,
-  `usePathname`), `src/format.ts` display formatting, and `src/styles.ts`
-  Tailwind class strings shared by forms.
+  `usePathname`), `src/format.ts` display formatting, `src/theme.ts` the saved
+  Light/Dark preference, and `src/FormBits.tsx` shared form pieces (`FieldError`,
+  `NativeSelect`, `FormActions`). shadcn components live in `src/components/ui/`
+  and `cn` in `src/lib/utils.ts`; import them through the `@/` alias (`src/`).
+  Drawers go through `ResponsiveDrawer` (right sheet, bottom sheet under 640px).
 - Worker: `worker/index.ts` is the Hono app under `/api`. Request validation
   lives in pure functions beside it (`worker/baseline.ts`,
   `worker/odometer.ts`); the schema is `worker/db/schema.ts`.
@@ -66,7 +69,21 @@
   theme tokens in `@theme` in `src/index.css`; there is no `tailwind.config.js`.
 - Style with utility classes. Write custom CSS only for what utilities can't
   express cleanly.
-- No component library is installed; build small components in React.
+- shadcn/ui is the default component library. For any new component or widget
+  (buttons, inputs, selects, badges, drawers, sheets, dialogs, tables, menus),
+  use the shadcn component first, added with the shadcn CLI into
+  `src/components/ui/`, and style it through the theme tokens in `src/index.css`.
+  Build a custom component only when shadcn has no fit, and compose it from
+  shadcn parts where possible. After `shadcn add`, check its imports: `cn` must
+  come from `@/lib/utils`, never an npm package named `cn`.
+- Colors come from the slate tokens in `src/index.css` (`ink`, `ink-2`, `ink-3`,
+  `surface`, `surface-2`, `line`, `brand`, `ok`, `soon`, `overdue`, and their
+  `-soft` tints); don't use raw Tailwind palette colors. Light is the default.
+  `dark:` applies only under `[data-theme="dark"]`, set from the saved setting,
+  never from the OS.
+- Status always pairs color with a text label (`StatusChip`).
+- Form inputs use 16px text so iOS Safari doesn't zoom. Keep native `<select>`
+  (`NativeSelect`) for form pickers.
 - No inline styles except for truly dynamic values.
 - Mobile-first: layouts must work on a phone (receipt capture is a mobile flow).
 

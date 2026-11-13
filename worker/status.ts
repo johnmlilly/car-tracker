@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm'
 import type { DueItemView, MileageSummary, ScheduleItemView, Vehicle } from '../shared/api'
 import { estimateMileage } from '../shared/mileage'
 import { computeDue, computeStatus, resolveLastDone } from '../shared/schedule'
+import { pickNextDue } from '../shared/scheduleView'
 import {
   dueItems,
   minderLogs,
@@ -185,6 +186,7 @@ export async function statusByVehicle(db: Db, rows: VehicleRow[], today: string)
           overdue:
             merged.items.filter((i) => i.status === 'overdue').length + merged.dueItems.length,
         },
+        nextDue: pickNextDue(merged.items, merged.dueItems, vehicleMileage?.estimate ?? null, today),
       }
       return [v.id, { vehicle, ...merged }]
     }),
