@@ -151,7 +151,7 @@ export const receipts = sqliteTable('receipts', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   vehicleId: integer('vehicle_id').references(() => vehicles.id),
   r2Key: text('r2_key').notNull().unique(),
-  contentType: text('content_type', { enum: ['image/webp', 'application/pdf'] }).notNull(),
+  contentType: text('content_type', { enum: ['image/webp', 'image/jpeg', 'application/pdf'] }).notNull(),
   status: text('status', { enum: ['pending', 'review', 'confirmed'] })
     .notNull()
     .default('pending'),
