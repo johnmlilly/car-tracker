@@ -53,6 +53,18 @@ describe('extractReceipt', () => {
     expect(text.type).toBe('text')
   })
 
+  it('sends a JPEG as an image block labeled image/jpeg', async () => {
+    const { client, create } = fakeClient(textMessage('{}'))
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]).buffer
+    await extractReceipt({ bytes: jpeg, contentType: 'image/jpeg' }, client)
+    const body = (create.mock.calls[0] as unknown as [CreateBody])[0]
+    const [file] = body.messages[0].content as Anthropic.ContentBlockParam[]
+    expect(file).toEqual({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/jpeg', data: btoa('\xff\xd8\xff\xe0') },
+    })
+  })
+
   it('sends a PDF as a document block', async () => {
     const { client, create } = fakeClient(textMessage('{}'))
     await extractReceipt({ bytes: PDF, contentType: 'application/pdf' }, client)
