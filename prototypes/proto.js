@@ -23,6 +23,9 @@ const ICONS = {
   history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
   code: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h2M7 13h6M7 17h4"/>',
   trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+  external: '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
 }
 
@@ -45,9 +48,12 @@ function protoBar() {
     ['home.html', 'Home'],
     ['vehicle.html', 'Vehicle grid'],
     ['vehicle.html?drawer=service', 'Add-service drawer'],
+    ['history.html', 'Service history'],
+    ['history.html?receipt=1', 'Receipt viewer'],
     ['phone.html?src=home.html', 'Phone: home'],
     ['phone.html?src=vehicle.html', 'Phone: vehicle'],
     ['phone.html?src=vehicle.html%3Fdrawer%3Dservice', 'Phone: bottom sheet'],
+    ['phone.html?src=history.html', 'Phone: history'],
   ]
   const bar = document.createElement('div')
   bar.className = 'proto-bar'

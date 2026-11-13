@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service history - car-tracker prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="ui.css">
+<script src="proto.js"></script>
+<style>
+  /* Layout: summary line + filters, then records grouped by year.
+     Desktop: one scannable row per record in fixed columns. Phone: compact stacked rows. */
+  .hhead { display: flex; justify-content: space-between; align-items: end; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .hhead h1 { font-size: 32px; font-weight: 800; }
+  .hhead .sub { color: var(--ink-3); font-size: 14px; margin-top: 2px; }
+  .stats { display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-3); }
+  .stat .k { font: 700 10px/1 var(--font-text); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .stat .v { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+  .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-5); }
+  .search { position: relative; flex: 1 1 220px; max-width: 320px; }
+  .search .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); width: 16px; height: 16px; }
+  .search .input { padding-left: 36px; border-radius: var(--radius-pill); background: var(--surface); }
+  .fchip { font: 600 13px/1 var(--font-text); padding: 9px 13px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .fchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: transparent; }
+  .fchip:focus-visible, .rec-main:focus-visible, .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); margin-left: auto; cursor: pointer; }
+
+  .year { margin-bottom: var(--space-6); }
+  .year-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 var(--space-1) var(--space-2); border-bottom: 1px solid var(--border-strong); }
+  .year-head h2 { font-size: 22px; font-weight: 800; }
+  .year-head span { font-size: 13px; color: var(--ink-3); }
+
+  .cols, .rec-main {
+    display: grid; align-items: center; gap: var(--space-4);
+    grid-template-columns: 84px minmax(0, 1fr) 150px 84px 84px 52px;
+  }
+  .cols { padding: var(--space-3) var(--space-3) var(--space-2); font: 700 10px/1 var(--font-text); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .cols .r, .rec .r { text-align: right; }
+
+  .list { list-style: none; margin: 0; padding: 0; }
+  .rec { border-bottom: 1px solid var(--border); }
+  .rec-main { width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
+  .rec-main:hover { background: var(--surface-2); }
+  .rec.open .rec-main { background: var(--surface-2); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+  .date .d { font-weight: 700; }
+  .date .y { font-size: 12px; color: var(--ink-3); }
+  .what { min-width: 0; display: grid; gap: 4px; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 var(--font-text); padding: 5px 8px; border-radius: var(--radius-pill); background: var(--accent-soft); color: var(--accent-text); }
+  .tag .icon { width: 13px; height: 13px; }
+  .tag.other { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
+  .desc { font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shop { font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shop small { display: block; font-size: 11px; color: var(--ink-3); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; }
+
+  .thumb { width: 44px; height: 56px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); display: grid; place-items: center; overflow: hidden; padding: 0; cursor: zoom-in; color: var(--ink-2); text-decoration: none; justify-self: end; }
+  .thumb svg.r { width: 100%; height: 100%; }
+  .thumb.pdf { cursor: pointer; font: 800 10px/1 var(--font-text); letter-spacing: .06em; color: var(--overdue); flex-direction: column; gap: 4px; display: flex; align-items: center; justify-content: center; }
+  .thumb.pdf .icon { width: 18px; height: 18px; color: var(--ink-3); }
+  .noreceipt { font-size: 11px; color: var(--ink-3); text-align: right; line-height: 1.2; }
+
+  .detail { display: none; background: var(--surface-2); border-radius: 0 0 var(--radius-sm) var(--radius-sm); padding: 0 var(--space-3) var(--space-4); margin-bottom: var(--space-2); }
+  .rec.open .detail { display: block; }
+  .items { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .items td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .items tr:last-child td { border-bottom: 0; }
+  .items td.amt { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+  .items td.svc { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+  .items tfoot td { font-weight: 700; }
+  .detail-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-3); flex-wrap: wrap; font-size: 12px; color: var(--ink-3); }
+  .detail-foot .acts { display: flex; gap: var(--space-2); }
+  .detail-foot .btn { padding: 8px 12px; font-size: 13px; }
+
+  .empty { padding: var(--space-6) var(--space-3); text-align: center; color: var(--ink-3); }
+
+  /* receipt viewer */
+  .viewer-scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 60; display: none; }
+  .viewer { position: fixed; z-index: 61; inset: 5vh 50% auto auto; transform: translateX(50%); width: min(560px, calc(100vw - 32px)); max-height: 90vh; display: none; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-drawer); overflow: hidden; }
+  body[data-viewer] .viewer-scrim { display: block; }
+  body[data-viewer] .viewer { display: flex; }
+  .viewer-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border); }
+  .viewer-head h2 { font-size: 17px; font-weight: 800; flex: 1; }
+  .viewer-head .sub { font: 500 12px var(--font-text); color: var(--ink-3); }
+  .viewer-body { overflow: auto; background: var(--bg-2); padding: var(--space-5); display: grid; place-items: center; }
+  .viewer-body svg { width: 100%; max-width: 380px; height: auto; border-radius: 6px; box-shadow: var(--shadow); }
+  .viewer-foot { display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border); }
+
+  @media (max-width: 760px) {
+    .hhead h1 { font-size: 26px; }
+    .cols { display: none; }
+    .rec-main {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas: "date cost thumb" "what what thumb" "meta meta thumb";
+      gap: 4px var(--space-3); align-items: start;
+    }
+    .date { grid-area: date; display: flex; gap: 6px; align-items: baseline; }
+    .what { grid-area: what; }
+    .rec-main > .cost { grid-area: cost; }
+    .rec-main > .rcell { grid-area: thumb; align-self: center; }
+    .rec-main > .shop, .rec-main > .odo { display: none; }
+    .meta-m { grid-area: meta; display: block !important; font-size: 12px; color: var(--ink-3); }
+    .toggle { margin-left: 0; }
+    .search { max-width: none; }
+    .viewer { inset: auto 0 0 0; transform: none; width: 100%; max-height: 92svh; border-radius: var(--radius) var(--radius) 0 0; }
+    .viewer-foot { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); }
+  }
+  .meta-m { display: none; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="home.html"><span class="brand-mark"><i data-i="wrench"></i></span>car-tracker</a>
+  <a class="btn btn-ghost" href="#"><i data-i="receipt"></i>Receipts</a>
+</header>
+
+<main class="wrap">
+  <a class="back" href="vehicle.html"><i data-i="chevronLeft"></i>2019 Toyota Corolla</a>
+
+  <section class="hhead">
+    <div>
+      <h1>Service history</h1>
+      <div class="sub">2019 Toyota Corolla · every service on record, newest first</div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <button class="btn btn-primary"><i data-i="plus"></i>Add service</button>
+  </section>
+
+  <div class="filters" role="group" aria-label="Filter services">
+    <label class="search" for="q"><i data-i="search"></i><input id="q" class="input" type="search" placeholder="Search work, shop, notes" aria-label="Search service history"></label>
+    <span id="chips" style="display:contents"></span>
+    <label class="toggle" for="withReceipt"><input id="withReceipt" type="checkbox">Has receipt</label>
+  </div>
+
+  <div id="out"></div>
+</main>
+
+<div class="viewer-scrim" data-close-viewer></div>
+<aside class="viewer" role="dialog" aria-modal="true" aria-labelledby="v-title">
+  <div class="viewer-head">
+    <span class="svc-ico" style="width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text)"><i data-i="receipt"></i></span>
+    <h2 id="v-title">Receipt<div class="sub" id="v-sub"></div></h2>
+    <button class="btn btn-icon btn-ghost" data-close-viewer aria-label="Close receipt"><i data-i="x"></i></button>
+  </div>
+  <div class="viewer-body" id="v-body"></div>
+  <div class="viewer-foot">
+    <span class="faint" style="font-size:12px;align-self:center">Stored photo (WebP). Tap outside to close.</span>
+    <a class="btn" href="#" id="v-open"><i data-i="external"></i>Open original</a>
+  </div>
+</aside>
+
+<script>
+// Prototype data (Corolla). Real page: GET /api/vehicles/:id/service-records.
+const GROUPS = {
+  'Oil and filter': ['Oil', 'droplet'], 'Tire rotation': ['Tires', 'tire'], 'Cabin air filter': ['Filters', 'wind'],
+  'Engine air filter': ['Filters', 'filter'], 'Brake fluid': ['Brakes & fluids', 'disc'], 'Coolant': ['Brakes & fluids', 'thermometer'],
+}
+const R = [
+  { date: '2026-06-14', odo: 53830, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'pdf', href: 'receipts/2026-06-14-toyota-of-cary.pdf' },
+    items: [['Tire rotation', 'Tire rotation', 2400], ['Wiper blades, front pair', null, 3890], ['Multi-point inspection', null, 0]] },
+  { date: '2026-03-02', odo: 51210, shop: 'Discount Tire', src: 'receipt', receipt: { type: 'image' },
+    items: [['4 tires, Michelin Defender2 205/55R16', null, 56800], ['Mount and balance', null, 4440]] },
+  { date: '2025-11-09', odo: 48080, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'image' }, minder: null,
+    items: [['0W-16 synthetic oil change', 'Oil and filter', 6995]] },
+  { date: '2025-07-22', odo: 47050, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'image' },
+    items: [['Rotate and balance', 'Tire rotation', 2400]] },
+  { date: '2025-02-11', odo: 46120, shop: 'AutoZone', src: 'manual', receipt: null,
+    items: [['Battery, Duralast Gold H5', null, 18999]] },
+  { date: '2024-12-07', odo: 45210, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'image' },
+    items: [['0W-16 synthetic oil change', 'Oil and filter', 6995], ['Cabin air filter', 'Cabin air filter', 5400], ['Tire rotation', 'Tire rotation', 2400]] },
+  { date: '2024-06-02', odo: 41000, shop: null, src: 'manual', receipt: null,
+    items: [['Tire rotation', 'Tire rotation', null]] },
+  { date: '2024-02-02', odo: 36620, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'image' },
+    items: [['Engine air filter', 'Engine air filter', 3850], ['Tire rotation', 'Tire rotation', 2400]] },
+  { date: '2024-01-18', odo: 36400, shop: 'Toyota of Cary', src: 'receipt', receipt: { type: 'image' },
+    items: [['Brake fluid flush', 'Brake fluid', 12900]] },
+]
+R.forEach((r, i) => { r.id = i; r.total = r.items.some((it) => it[2] != null) ? r.items.reduce((s, it) => s + (it[2] || 0), 0) : null })
+
+const $ = (s) => document.querySelector(s)
+const money = (c) => c == null ? '—' : '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const miles = (n) => n == null ? '—' : n.toLocaleString('en-US')
+const d = (s) => new Date(s + 'T12:00:00')
+const md = (s) => d(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const full = (s) => d(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const groupOf = (svc) => svc ? GROUPS[svc][0] : 'Other'
+
+const state = { q: '', group: 'All', receipt: false, open: new Set([0]) }
+
+function receiptSvg(r) {
+  // Stand-in for the stored receipt photo.
+  const lines = r.items.map((it, i) => `<text x="22" y="${150 + i * 22}" font-size="11">${esc(it[0].slice(0, 30))}</text><text x="258" y="${150 + i * 22}" font-size="11" text-anchor="end">${money(it[2])}</text>`).join('')
+  const y = 150 + r.items.length * 22
+  return `<svg class="r" viewBox="0 0 280 ${y + 70}" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace" fill="#2a2a2a">
+    <rect width="280" height="${y + 70}" fill="#fbfaf6"/>
+    <text x="140" y="34" font-size="14" font-weight="700" text-anchor="middle">${esc((r.shop || 'Shop').toUpperCase())}</text>
+    <text x="140" y="52" font-size="10" text-anchor="middle" fill="#777">SAMPLE RECEIPT · PROTOTYPE</text>
+    <text x="22" y="84" font-size="11">DATE ${full(r.date)}</text>
+    <text x="22" y="102" font-size="11">MILES ${miles(r.odo)}</text>
+    <line x1="22" x2="258" y1="122" y2="122" stroke="#999" stroke-dasharray="3 3"/>
+    ${lines}
+    <line x1="22" x2="258" y1="${y}" y2="${y}" stroke="#999" stroke-dasharray="3 3"/>
+    <text x="22" y="${y + 26}" font-size="13" font-weight="700">TOTAL</text>
+    <text x="258" y="${y + 26}" font-size="13" font-weight="700" text-anchor="end">${money(r.total)}</text>
+  </svg>`
+}
+
+function receiptCell(r) {
+  if (!r.receipt) return `<span class="noreceipt">No<br>receipt</span>`
+  if (r.receipt.type === 'pdf') return `<a class="thumb pdf" href="${r.receipt.href}" target="_blank" rel="noopener" aria-label="Open receipt PDF from ${full(r.date)}" onclick="event.stopPropagation()"><i data-i="file"></i>PDF</a>`
+  return `<span class="thumb" role="button" tabindex="0" data-view="${r.id}" aria-label="View receipt from ${full(r.date)}">${receiptSvg(r)}</span>`
+}
+
+function row(r) {
+  const svcs = [...new Set(r.items.map((it) => it[1]).filter(Boolean))]
+  const others = r.items.filter((it) => !it[1] && it[2] !== 0)
+  const tags = svcs.map((s) => `<span class="tag"><i data-i="${GROUPS[s][1]}"></i>${s}</span>`).join('') +
+    (others.length && !svcs.length ? `<span class="tag other"><i data-i="wrench"></i>Other</span>` : '')
+  const desc = r.items.filter((it) => it[2] !== 0).map((it) => it[0]).join(' · ')
+  const open = state.open.has(r.id)
+  return `<li class="rec ${open ? 'open' : ''}">
+    <div class="rec-main" role="button" tabindex="0" aria-expanded="${open}" data-toggle="${r.id}">
+      <div class="date"><div class="d">${md(r.date)}</div><div class="y">${d(r.date).getFullYear()}</div></div>
+      <div class="what"><div class="tags">${tags}</div><div class="desc">${esc(desc)}</div></div>
+      <div class="shop">${r.shop ? esc(r.shop) : '<span class="faint">Not recorded</span>'}<small>${r.src === 'receipt' ? 'From receipt' : 'Entered by hand'}</small></div>
+      <div class="num r odo">${miles(r.odo)}</div>
+      <div class="num r cost">${money(r.total)}</div>
+      <div class="rcell" style="justify-self:end">${receiptCell(r)}</div>
+      <div class="meta-m">${r.shop ? esc(r.shop) + ' · ' : ''}<span class="mono">${miles(r.odo)}</span> mi</div>
+    </div>
+    <div class="detail">
+      <table class="items"><tbody>
+        ${r.items.map((it) => `<tr><td>${esc(it[0])}</td><td class="svc">${it[1] || 'Other'}</td><td class="amt">${money(it[2])}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td>Total</td><td></td><td class="amt">${money(r.total)}</td></tr></tfoot></table>
+      <div class="detail-foot">
+        <span>${full(r.date)} · <span class="mono">${miles(r.odo)}</span> mi${r.receipt ? ' · receipt confirmed' : ''}</span>
+        <span class="acts"><button class="btn"><i data-i="pencil"></i>Edit</button><button class="btn btn-ghost"><i data-i="trash"></i>Delete</button></span>
+      </div>
+    </div>
+  </li>`
+}
+
+function render() {
+  const q = state.q.toLowerCase()
+  const rows = R.filter((r) =>
+    (state.group === 'All' || r.items.some((it) => groupOf(it[1]) === state.group)) &&
+    (!state.receipt || r.receipt) &&
+    (!q || [r.shop, ...r.items.map((it) => it[0] + ' ' + (it[1] || ''))].join(' ').toLowerCase().includes(q)))
+  const all = R.reduce((s, r) => s + (r.total || 0), 0)
+  $('#stats').innerHTML = [
+    ['Services', R.length], ['Spent', money(all)], ['Last service', full(R[0].date)], ['Receipts', R.filter((r) => r.receipt).length + ' of ' + R.length],
+  ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v ${k === 'Spent' ? 'mono' : ''}">${v}</div></div>`).join('')
+  const byYear = {}
+  rows.forEach((r) => (byYear[r.date.slice(0, 4)] ||= []).push(r))
+  $('#out').innerHTML = rows.length ? Object.keys(byYear).sort().reverse().map((y) => {
+    const list = byYear[y], sum = list.reduce((s, r) => s + (r.total || 0), 0)
+    return `<section class="year"><div class="year-head"><h2>${y}</h2><span>${list.length} service${list.length > 1 ? 's' : ''} · <span class="mono">${money(sum)}</span></span></div>
+      <div class="cols" aria-hidden="true"><span>Date</span><span>Work done</span><span>Shop</span><span class="r">Miles</span><span class="r">Cost</span><span class="r">Receipt</span></div>
+      <ul class="list">${list.map(row).join('')}</ul></section>`
+  }).join('') : `<div class="empty">No services match. <button class="link" id="clear">Clear filters</button></div>`
+  renderIcons($('#out'))
+}
+
+function chips() {
+  const gs = ['All', 'Oil', 'Tires', 'Filters', 'Brakes & fluids', 'Other']
+  $('#chips').innerHTML = gs.map((g) => `<button class="fchip" aria-pressed="${g === state.group}" data-group="${g}">${g}</button>`).join('')
+}
+
+function openViewer(id) {
+  const r = R[id]
+  $('#v-sub').textContent = `${full(r.date)} · ${r.shop || ''} · ${money(r.total)}`
+  $('#v-body').innerHTML = receiptSvg(r)
+  document.body.dataset.viewer = id
+}
+const closeViewer = () => delete document.body.dataset.viewer
+
+document.addEventListener('click', (e) => {
+  const g = e.target.closest('[data-group]'); if (g) { state.group = g.dataset.group; chips(); return render() }
+  if (e.target.closest('#clear')) { state.group = 'All'; state.q = ''; state.receipt = false; $('#q').value = ''; $('#withReceipt').checked = false; chips(); return render() }
+  const v = e.target.closest('[data-view]'); if (v) { e.stopPropagation(); return openViewer(+v.dataset.view) }
+  if (e.target.closest('[data-close-viewer]')) return closeViewer()
+  if (e.target.closest('.detail .btn')) return
+  const t = e.target.closest('[data-toggle]')
+  if (t) { const id = +t.dataset.toggle; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render() }
+})
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') return closeViewer()
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-view], [data-toggle]')) { e.preventDefault(); e.target.click() }
+})
+document.addEventListener('DOMContentLoaded', () => {
+  $('#q').addEventListener('input', (e) => { state.q = e.target.value; render() })
+  $('#withReceipt').addEventListener('change', (e) => { state.receipt = e.target.checked; render() })
+  $('#v-open').addEventListener('click', (e) => e.preventDefault())
+  chips(); render()
+  if (new URLSearchParams(location.search).get('receipt')) openViewer(2)
+})
+</script>
+</body>
+</html>

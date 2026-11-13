@@ -232,7 +232,14 @@ sheet on phone instead of inline forms or separate pages. Design reference:
   odometer, Log Minder code); service cards in a 2-column grid (1 on phone), most
   urgent first, each with icon, countdown, interval progress bar, last done / next
   due. Minder due items sit in the same grid with a code chip.
-- **Service history** - own page; Add service opens the drawer.
+- **Service history** - own page per vehicle, linked from the vehicle header. Full
+  list, newest first, grouped by year with a yearly count and total; summary of
+  services, total spent, last service, and receipt count. Each row shows date, work
+  done (service tags plus line-item descriptions), shop, miles, cost, and a receipt
+  thumbnail. Search plus service-group filters and a "has receipt" toggle. A row
+  expands to its line items with amounts, Edit, and Delete. Image receipts open in
+  a viewer (bottom sheet on phone); PDFs open in a new tab. Rows stack on phone.
+  Add service opens the drawer.
 - **Receipt review** - receipt image beside editable fields; Confirm writes the
   record.
 - **Bulk quick-review list** - one editable row per receipt (date, shop, odometer,
