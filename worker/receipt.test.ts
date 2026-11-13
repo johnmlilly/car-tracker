@@ -18,10 +18,10 @@ describe('sniffReceiptType', () => {
     expect(sniffReceiptType(new Uint8Array(WEBP))).toBe('image/webp')
     expect(sniffReceiptType(new Uint8Array(PDF))).toBe('application/pdf')
     expect(sniffReceiptType(new Uint8Array(JPEG))).toBe('image/jpeg')
-    expect(sniffReceiptType(new Uint8Array(PNG))).toBe('image/png')
   })
 
   it.each([
+    ['PNG', PNG],
     ['HEIC', HEIC],
     ['RIFF that is not WebP', WAVE],
     ['truncated WebP', WEBP.slice(0, 11)],
@@ -49,8 +49,8 @@ describe('parseReceiptUpload', () => {
     expect(jpeg).toMatchObject({ ok: true, value: { contentType: 'image/jpeg' } })
   })
 
-  it('rejects bytes that are not WebP, JPEG, PNG, or PDF, whatever the declared type', async () => {
-    const result = await parseReceiptUpload({ vehicleId: '1', file: fileOf(HEIC, 'image/webp') })
+  it('rejects bytes that are not WebP, JPEG, or PDF, whatever the declared type', async () => {
+    const result = await parseReceiptUpload({ vehicleId: '1', file: fileOf(PNG, 'image/webp') })
     expect(result).toEqual({ ok: false, fields: { file: FILE_MESSAGES.type } })
   })
 

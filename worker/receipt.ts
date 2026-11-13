@@ -9,17 +9,12 @@ export const FILE_MESSAGES = {
 
 export const VEHICLE_MESSAGE = 'Choose a vehicle.'
 
-/**
- * The receipt type from the file's leading bytes, or null for anything else.
- * The app's client re-encodes photos to WebP or JPEG; PNG is accepted
- * deliberately as a fallback for browsers that can encode neither.
- */
+/** The receipt type from the file's leading bytes, or null for anything else. */
 export function sniffReceiptType(bytes: Uint8Array): ReceiptContentType | null {
   const startsWith = (prefix: number[], at = 0) => prefix.every((b, i) => bytes[at + i] === b)
   const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0))
   if (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8)) return 'image/webp'
   if (startsWith([0xff, 0xd8, 0xff])) return 'image/jpeg'
-  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image/png'
   if (startsWith(ascii('%PDF-'))) return 'application/pdf'
   return null
 }
