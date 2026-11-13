@@ -203,6 +203,8 @@ populating a review; it never writes records directly.
 
 - **React 19 + TypeScript (strict) + Vite** - client SPA, installable PWA, online only
 - **Tailwind CSS v4** - styling
+- **shadcn/ui** (from feature 8) - copied-in Radix-based components for buttons,
+  inputs, drawers, bottom sheets, and dialogs, themed with the app's tokens
 - **Hono on Cloudflare Workers** - API; same Worker serves the built client
 - **Cloudflare D1 + Drizzle** - database and migrations
 - **Cloudflare R2** - receipt images and PDFs
