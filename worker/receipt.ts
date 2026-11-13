@@ -9,16 +9,18 @@ export const FILE_MESSAGES = {
 
 export const VEHICLE_MESSAGE = 'Choose a vehicle.'
 
-/** The receipt type from the file's leading bytes, or null for anything else. */
+/**
+ * The receipt type from the file's leading bytes, or null for anything else.
+ * The app's client re-encodes photos to WebP or JPEG; PNG is accepted
+ * deliberately as a fallback for browsers that can encode neither.
+ */
 export function sniffReceiptType(bytes: Uint8Array): ReceiptContentType | null {
-  const ascii = (start: number, text: string) =>
-    [...text].every((c, i) => bytes[start + i] === c.charCodeAt(0))
-  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp'
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg'
-  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-  if (png.every((b, i) => bytes[i] === b)) return 'image/png'
-  const pdf = [0x25, 0x50, 0x44, 0x46, 0x2d] // %PDF-
-  if (pdf.every((b, i) => bytes[i] === b)) return 'application/pdf'
+  const startsWith = (prefix: number[], at = 0) => prefix.every((b, i) => bytes[at + i] === b)
+  const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0))
+  if (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8)) return 'image/webp'
+  if (startsWith([0xff, 0xd8, 0xff])) return 'image/jpeg'
+  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image/png'
+  if (startsWith(ascii('%PDF-'))) return 'application/pdf'
   return null
 }
 

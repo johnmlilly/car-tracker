@@ -30,6 +30,9 @@ export function classifyFile(file: { type: string; size: number }): FileKind {
 
 export class PrepareError extends Error {}
 
+/** Whether this browser's canvas can encode WebP; learned on the first prepare. */
+let webpEncodes: boolean | undefined
+
 function encode(canvas: HTMLCanvasElement, type: string) {
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, IMAGE_QUALITY))
 }
@@ -60,7 +63,8 @@ export async function prepareReceipt(file: File): Promise<Blob> {
   context.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
-  let blob = await encode(canvas, 'image/webp')
+  let blob = webpEncodes === false ? null : await encode(canvas, 'image/webp')
+  if (blob) webpEncodes = blob.type === 'image/webp'
   if (blob?.type !== 'image/webp') blob = await encode(canvas, 'image/jpeg')
   if (!blob) throw new PrepareError(PREPARE_MESSAGES.decode)
   if (blob.size > MAX_RECEIPT_BYTES) throw new PrepareError(PREPARE_MESSAGES.size)
