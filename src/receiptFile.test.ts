@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MAX_RECEIPT_BYTES } from '../shared/api'
 import { classifyFile, fitWithin, PREPARE_MESSAGES } from './receiptFile'
 
@@ -34,5 +34,45 @@ describe('classifyFile', () => {
 
   it.each(['text/plain', 'application/zip', ''])('rejects type %j', (type) => {
     expect(classifyFile({ type, size: 10 })).toEqual({ error: PREPARE_MESSAGES.type })
+  })
+})
+
+describe('prepareReceipt encoding', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.resetModules()
+  })
+
+  /** Stubs the canvas so a WebP request returns `webpResult`; returns the requested types. */
+  function stubCanvas(webpResult: string) {
+    const requested: string[] = []
+    vi.stubGlobal('createImageBitmap', async () => ({ width: 100, height: 50, close() {} }))
+    vi.stubGlobal('document', {
+      createElement: () => ({
+        getContext: () => ({ drawImage() {} }),
+        toBlob: (resolve: (b: Blob) => void, type: string) => {
+          requested.push(type)
+          resolve(new Blob(['x'], { type: type === 'image/webp' ? webpResult : type }))
+        },
+      }),
+    })
+    return requested
+  }
+
+  const photo = () => new File(['x'], 'photo.jpg', { type: 'image/jpeg' })
+
+  it('keeps WebP when the browser can encode it', async () => {
+    const requested = stubCanvas('image/webp')
+    const { prepareReceipt } = await import('./receiptFile')
+    expect((await prepareReceipt(photo())).type).toBe('image/webp')
+    expect(requested).toEqual(['image/webp'])
+  })
+
+  it('falls back to JPEG when WebP comes back as PNG, and skips WebP after that', async () => {
+    const requested = stubCanvas('image/png')
+    const { prepareReceipt } = await import('./receiptFile')
+    expect((await prepareReceipt(photo())).type).toBe('image/jpeg')
+    expect((await prepareReceipt(photo())).type).toBe('image/jpeg')
+    expect(requested).toEqual(['image/webp', 'image/jpeg', 'image/jpeg'])
   })
 })

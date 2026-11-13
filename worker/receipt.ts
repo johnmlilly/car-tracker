@@ -11,11 +11,11 @@ export const VEHICLE_MESSAGE = 'Choose a vehicle.'
 
 /** The receipt type from the file's leading bytes, or null for anything else. */
 export function sniffReceiptType(bytes: Uint8Array): ReceiptContentType | null {
-  const ascii = (start: number, text: string) =>
-    [...text].every((c, i) => bytes[start + i] === c.charCodeAt(0))
-  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return 'image/webp'
-  const pdf = [0x25, 0x50, 0x44, 0x46, 0x2d] // %PDF-
-  if (pdf.every((b, i) => bytes[i] === b)) return 'application/pdf'
+  const startsWith = (prefix: number[], at = 0) => prefix.every((b, i) => bytes[at + i] === b)
+  const ascii = (text: string) => [...text].map((c) => c.charCodeAt(0))
+  if (startsWith(ascii('RIFF')) && startsWith(ascii('WEBP'), 8)) return 'image/webp'
+  if (startsWith([0xff, 0xd8, 0xff])) return 'image/jpeg'
+  if (startsWith(ascii('%PDF-'))) return 'application/pdf'
   return null
 }
 

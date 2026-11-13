@@ -66,7 +66,7 @@ function fileBlock(file: ReceiptFile): Anthropic.ContentBlockParam {
   const data = toBase64(file.bytes)
   return file.contentType === 'application/pdf'
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } }
-    : { type: 'image', source: { type: 'base64', media_type: 'image/webp', data } }
+    : { type: 'image', source: { type: 'base64', media_type: file.contentType, data } }
 }
 
 /**

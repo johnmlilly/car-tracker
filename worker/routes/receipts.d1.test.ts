@@ -28,6 +28,7 @@ afterEach(async () => {
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4])
 const PDF = new TextEncoder().encode('%PDF-1.7\nfake')
 const WEBP = new TextEncoder().encode('RIFF\x24\0\0\0WEBPVP8 fake')
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
 async function vehicleId(name: string): Promise<number> {
   const row = await env.DB.prepare('SELECT id FROM vehicles WHERE name = ?')
@@ -89,8 +90,17 @@ describe('receipt routes against D1 and R2', () => {
     expect(new Uint8Array(await object!.arrayBuffer())).toEqual(PDF)
   })
 
-  it('rejects bytes that are not WebP or PDF and stores nothing', async () => {
-    const res = await upload({ vehicleId: '1', file: JPEG, type: 'image/webp' })
+  it('stores a JPEG upload as image/jpeg', async () => {
+    const corolla = await vehicleId('2019 Toyota Corolla')
+    const res = await upload({ vehicleId: String(corolla), file: JPEG, type: 'image/webp' })
+    expect(res.status).toBe(201)
+    expect(await res.json()).toMatchObject({ contentType: 'image/jpeg' })
+    const [row] = await rows()
+    expect(row.r2Key).toMatch(/\.jpg$/)
+  })
+
+  it('rejects bytes that are not WebP, JPEG, or PDF and stores nothing', async () => {
+    const res = await upload({ vehicleId: '1', file: PNG, type: 'image/webp' })
     expect(res.status).toBe(400)
     expect(await fieldsOf(res)).toEqual({ file: FILE_MESSAGES.type })
     expect(await rows()).toEqual([])

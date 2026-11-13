@@ -1,7 +1,7 @@
 import { MAX_RECEIPT_BYTES } from '../shared/api'
 
 export const MAX_EDGE = 1600
-const WEBP_QUALITY = 0.75
+const IMAGE_QUALITY = 0.75
 
 export const PREPARE_MESSAGES = {
   type: 'Use a photo or a PDF.',
@@ -30,7 +30,18 @@ export function classifyFile(file: { type: string; size: number }): FileKind {
 
 export class PrepareError extends Error {}
 
-/** A PDF unchanged, or the image re-encoded as WebP at most MAX_EDGE px on its longer side. */
+/** Whether this browser's canvas can encode WebP; learned on the first prepare. */
+let webpEncodes: boolean | undefined
+
+function encode(canvas: HTMLCanvasElement, type: string) {
+  return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, IMAGE_QUALITY))
+}
+
+/**
+ * A PDF unchanged, or the image re-encoded at most MAX_EDGE px on its longer
+ * side: WebP where the browser can encode it, else JPEG (iOS Safari returns PNG
+ * for a WebP request).
+ */
 export async function prepareReceipt(file: File): Promise<Blob> {
   const kind = classifyFile(file)
   if ('error' in kind) throw new PrepareError(kind.error)
@@ -52,9 +63,9 @@ export async function prepareReceipt(file: File): Promise<Blob> {
   context.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/webp', WEBP_QUALITY),
-  )
+  let blob = webpEncodes === false ? null : await encode(canvas, 'image/webp')
+  if (blob) webpEncodes = blob.type === 'image/webp'
+  if (blob?.type !== 'image/webp') blob = await encode(canvas, 'image/jpeg')
   if (!blob) throw new PrepareError(PREPARE_MESSAGES.decode)
   if (blob.size > MAX_RECEIPT_BYTES) throw new PrepareError(PREPARE_MESSAGES.size)
   return blob

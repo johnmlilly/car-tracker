@@ -25,10 +25,22 @@ function useRevokeOnChange(url: string | null) {
   }, [url])
 }
 
+/** Filename hint only; the server decides the type from the file's bytes. */
+function receiptFileName(type: string): string {
+  switch (type) {
+    case 'application/pdf':
+      return 'receipt.pdf'
+    case 'image/jpeg':
+      return 'receipt.jpg'
+    default:
+      return 'receipt.webp'
+  }
+}
+
 async function uploadReceipt(vehicleId: string, blob: Blob): Promise<ReceiptView> {
   const form = new FormData()
   form.set('vehicleId', vehicleId)
-  form.set('file', blob, blob.type === 'application/pdf' ? 'receipt.pdf' : 'receipt.webp')
+  form.set('file', blob, receiptFileName(blob.type))
   return apiRequest<ReceiptView>('/api/receipts', { method: 'POST', body: form })
 }
 

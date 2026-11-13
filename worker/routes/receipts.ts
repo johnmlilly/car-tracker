@@ -24,7 +24,7 @@ export const receiptRoutes = new Hono<{ Bindings: Env }>()
 /** Leaves room for multipart boundaries and the vehicleId field. */
 const MAX_BODY_BYTES = MAX_RECEIPT_BYTES + 64 * 1024
 
-const EXTENSIONS = { 'image/webp': 'webp', 'application/pdf': 'pdf' } as const
+const EXTENSIONS = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'application/pdf': 'pdf' } as const
 
 const RECEIPT_NOT_FOUND = 'Receipt not found'
 const ALREADY_READ = 'This receipt has already been read.'
