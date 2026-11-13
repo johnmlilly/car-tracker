@@ -1,8 +1,8 @@
 /* car-tracker theme - durable output of /prototype.
    Port into src/index.css (Tailwind v4 @theme) in feature 8.
    Light-first, muted slate palette, one flat slate-blue accent,
-   system font throughout with tabular numbers. Follows system;
-   [data-theme] forces one. */
+   system font throughout with tabular numbers. Light by default;
+   dark only when [data-theme="dark"] is chosen. */
 
 :root {
   color-scheme: light;
@@ -58,35 +58,6 @@
   --space-5: 24px;
   --space-6: 32px;
   --drawer-width: 440px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-  --bg: #0e131a;
-  --bg-2: #121821;
-  --surface: #161d27;
-  --surface-2: #1c2430;
-  --border: rgba(226, 232, 240, 0.08);
-  --border-strong: rgba(226, 232, 240, 0.16);
-  --scrim: rgba(0, 0, 0, 0.55);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-drawer: -8px 0 28px rgba(0, 0, 0, 0.45);
-  --ink: #e6eaf0;
-  --ink-2: #a4aebc;
-  --ink-3: #7d8898;
-  --accent: #8fa4c4;
-  --accent-text: #a8bad6;
-  --accent-ink: #0e131a;
-  --accent-soft: rgba(143, 164, 196, 0.14);
-  --ok: #82bf9c;
-  --ok-soft: rgba(130, 191, 156, 0.12);
-  --soon: #d8b36d;
-  --soon-bar: #d8b36d;
-  --soon-soft: rgba(216, 179, 109, 0.13);
-  --overdue: #e08b81;
-  --overdue-soft: rgba(224, 139, 129, 0.12);
-  }
 }
 
 :root[data-theme="dark"] {

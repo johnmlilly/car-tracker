@@ -61,18 +61,17 @@ function protoBar() {
     '<strong>PROTOTYPE</strong>' +
     pages.map(([href, label]) => `<a href="${href}" class="${href === page ? 'on' : ''}">${label}</a>`).join('') +
     '<span class="spacer"></span><span>Theme</span>' +
-    ['system', 'light', 'dark'].map((t) => `<button data-theme-set="${t}">${t}</button>`).join('')
+    ['light', 'dark'].map((t) => `<button data-theme-set="${t}">${t}</button>`).join('')
   document.body.prepend(bar)
   const apply = (t) => {
-    if (t === 'system') document.documentElement.removeAttribute('data-theme')
-    else document.documentElement.dataset.theme = t
+    document.documentElement.dataset.theme = t
     bar.querySelectorAll('[data-theme-set]').forEach((b) => b.classList.toggle('on', b.dataset.themeSet === t))
     try { localStorage.setItem('proto-theme', t) } catch { /* ignore */ }
     document.querySelectorAll('iframe').forEach((f) => { try { f.contentWindow.postMessage({ theme: t }, '*') } catch { /* ignore */ } })
   }
   bar.addEventListener('click', (e) => { const t = e.target.dataset?.themeSet; if (t) apply(t) })
-  let saved = 'system'
-  try { saved = localStorage.getItem('proto-theme') || 'system' } catch { /* ignore */ }
+  let saved = 'light'
+  try { saved = localStorage.getItem('proto-theme') || 'light' } catch { /* ignore */ }
   apply(saved)
 }
 
