@@ -90,7 +90,7 @@ Milestone 2 - Receipts
    stored in R2.
 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword
    mapping to services, side-by-side review, Minder code mismatch flag.
-8. **UI refresh** - dark/light theme modeled on carmaintenance.app; inputs in
+8. **UI refresh** - muted slate theme, light by default with a dark option; inputs in
    side drawers (bottom sheet on phone); 2-column service card grid; vehicle photos.
 9. **Bulk import** - upload many past receipts; confirm from a quick-review list.
 
@@ -218,9 +218,10 @@ None. Personal tool.
 
 ## UI/UX
 
-Modeled on carmaintenance.app: dark-first with a matching light variant (follows
-system), orange gradient accent, Archivo display headings, system text font, mono
-for mileage numbers, 24px card radius, pill buttons, lucide line icons. Mobile-first;
+Calm and muted: light by default, with a dark option in a small settings menu
+(saved per device). Cool slate neutrals, one flat slate-blue accent (no gradients),
+softer status colors, system font throughout with tabular numbers for mileage and
+costs, 14px card radius, light shadows, pill buttons, lucide line icons. Mobile-first;
 status uses color plus a text label, never color alone. Inputs (last done, add
 service, odometer, Minder code) open in a right-side drawer on desktop and a bottom
 sheet on phone instead of inline forms or separate pages. Design reference:
