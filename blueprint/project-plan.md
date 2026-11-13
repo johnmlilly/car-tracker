@@ -50,6 +50,14 @@ codes on top of its intervals.
 - "Last done" is always the **newest confirmed** service for that item,
   regardless of the order records were entered or imported.
 
+**Other maintenance (no interval, both vehicles).**
+
+- Some work isn't on a schedule: new tires, battery, brake pads and rotors, wiper
+  blades, wheel alignment. These are canonical services with keywords but no
+  interval, so they never become due or trigger reminders.
+- Each vehicle page shows when each was last done (date and miles, plus time and
+  miles since) from the newest confirmed record, linked to that record.
+
 **Odyssey - Honda Maintenance Minder (in addition to intervals).**
 
 - The car decides when service is due and shows a code (for example `B12`): a main
@@ -141,7 +149,8 @@ codes on top of its intervals.
 
 - `vehicles`: the two seeded vehicles and whether each also uses Minder codes
 - `services`: canonical service types (oil change, tire rotation, cabin filter,
-  and so on) with keywords for receipt matching
+  and so on) with keywords for receipt matching; other-maintenance services
+  (tires, battery, brakes, wipers, alignment) have no schedule item
 - `schedule_items`: per-vehicle intervals (miles and/or months), seeded
   and editable, plus the "last done" baseline
 - `minder_codes`: Odyssey lookup from main letter and sub-item numbers to services

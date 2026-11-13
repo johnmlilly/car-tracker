@@ -1,6 +1,6 @@
 # car-tracker - Project Overview
 
-<!-- blueprint:source-hash f290024dac70ca8939de4283fb6755dfbf984fb5af155116346bd9ccb16f8a32 -->
+<!-- blueprint:source-hash 7cbf213b1b87eb25c79953fdba719efb3774312f8413928d33843bfd44cd2d5d -->
 
 > Personal, single-user PWA that tracks maintenance for a 2024 Honda Odyssey and a
 > 2019 Toyota Corolla: service history from receipt photos, what's due, and email
@@ -58,6 +58,13 @@ on top. These rules drive several features; keep them consistent.
 - Historical codes on bulk-imported receipts record history only; they never open
   due items.
 
+**Other maintenance (no interval, both vehicles)**
+- New tires, battery, brake pads and rotors, wiper blades, and wheel alignment are
+  canonical services with keywords but no interval. They never become due and never
+  trigger reminders.
+- Each vehicle page shows when each was last done (date and miles, plus time and
+  miles since) from the newest confirmed record, linked to that record.
+
 **Closing items (both vehicles)**
 - A confirmed service record closes only the items it covers. Uncovered items from
   a logged code stay overdue.
@@ -69,7 +76,8 @@ on top. These rules drive several features; keep them consistent.
 
 ## Features
 
-Build order from `build-plan.md`. Headline: **7. Receipt reading and review**.
+Build order from `build-plan.md`. Features 1-8 are complete; next up is
+**9. Last done links to its record**.
 
 Milestone 1 - Know what's due
 1. **Vehicles and schedules foundation** - D1 schema and seed data (vehicles,
@@ -86,17 +94,27 @@ Milestone 1 - Know what's due
    items it covers.
 
 Milestone 2 - Receipts
-6. **Receipt upload** - camera or file capture, client-side resize (~1600px JPEG),
-   stored in R2.
+6. **Receipt upload** - camera or file capture, client-side resize, stored in R2.
 7. **Receipt reading and review** - `extractReceipt()` with Haiku 5.5, keyword
    mapping to services, side-by-side review, Minder code mismatch flag.
-8. **UI refresh** - muted slate theme, light by default with a dark option; inputs in
-   side drawers (bottom sheet on phone); 2-column service card grid; vehicle photos.
-9. **Bulk import** - upload many past receipts; confirm from a quick-review list.
+8. **UI refresh** - muted slate theme on shadcn/ui, light by default with a saved
+   Light/Dark choice; inputs in side drawers (bottom sheet on phone); 2-column
+   service card grid; home cards with photos; per-vehicle service history page.
+9. **Last done links to its record** - a service card's last done line opens that
+   record in service history, scrolled to and expanded; baseline-only last done
+   stays plain text.
+10. **Vehicle hero redesign** - regroup the vehicle header's controls (add receipt,
+    add service, log odometer, log Minder code, service history) by purpose so they
+    flow in an obvious order on desktop and phone, with the ODO and its source easy
+    to read.
+11. **Other maintenance tracking** - no-interval services (tires, battery, brakes,
+    wipers, alignment) with receipt keywords; an Other maintenance section on each
+    vehicle page with last done and time/miles since, linked to the record.
+12. **Bulk import** - upload many past receipts; confirm from a quick-review list.
 
 Milestone 3 - Reminders
-10. **Email reminders** - Resend weekly digest, next-morning overdue alert,
-   stale-odometer nudge.
+13. **Email reminders** - Resend weekly digest, next-morning overdue alert,
+    stale-odometer nudge.
 
 Non-goals (MVP): multiple users or sharing; offline mode or upload queue; push
 notifications; owner's-manual comparison (`unpdf`); cost reports, spending
@@ -110,7 +128,8 @@ timestamps ISO strings, money in integer cents, mileage in integer miles.
 
 > Feature 1 locks `vehicles`, `services`, `schedule_items`, and `minder_codes`;
 > every later feature reads them. Feature 4 locks `minder_logs` and
-> `due_items`; features 5, 7, and 8 close items through it.
+> `due_items`; features 5, 7, and 12 close items through it. Feature 11 adds
+> other-maintenance rows to `services`.
 
 ### vehicles
 - `id` (int, pk)
@@ -123,6 +142,9 @@ timestamps ISO strings, money in integer cents, mileage in integer miles.
 - `id` (int, pk)
 - `name` (text, unique) - canonical service, e.g. "Oil change", "Tire rotation"
 - `keywords` (text, JSON array) - used to match receipt line items
+- Other-maintenance services (tires, battery, brakes, wipers, alignment) have no
+  `schedule_items` row and no due status; their last done comes from the newest
+  confirmed `service_items` row for the vehicle.
 
 ### schedule_items (both vehicles)
 - `id` (int, pk)
@@ -220,37 +242,30 @@ None. Personal tool.
 
 ## UI/UX
 
-Calm and muted: light by default, with a dark option in a small settings menu
-(saved per device). Cool slate neutrals, one flat slate-blue accent (no gradients),
-softer status colors, system font throughout with tabular numbers for mileage and
-costs, 14px card radius, light shadows, pill buttons, lucide line icons. Mobile-first;
-status uses color plus a text label, never color alone. Inputs (last done, add
-service, odometer, Minder code) open in a right-side drawer on desktop and a bottom
-sheet on phone instead of inline forms or separate pages. Design reference:
-`prototypes/`; the app's live tokens are in `src/index.css`.
+Calm and muted: light by default, with a Light/Dark choice in a small settings
+menu (saved per device). Cool slate neutrals, one flat slate-blue accent, softer
+status colors, system font with tabular numbers, lucide line icons, shadcn/ui
+components. Mobile-first; status uses color plus a text label, never color alone.
+Inputs (last done, add service, odometer, Minder code) open in a right-side drawer
+on desktop and a bottom sheet on phone. Live tokens are in `src/index.css`.
 
-- **Home** - two vehicle cards: bundled photo, estimated mileage, overdue/soon
+- **Home** (`/`) - two vehicle cards: bundled photo, estimated mileage, overdue/soon
   chips, next due item. Prominent **Add receipt** action in thumb reach.
-- **Vehicle detail** - header with photo, ODO, and pill actions (Add service, Log
-  odometer, Log Minder code); service cards in a 2-column grid (1 on phone), most
-  urgent first, each with icon, countdown, interval progress bar, last done / next
-  due. Minder due items sit in the same grid with a code chip.
-- **Service history** - own page per vehicle, linked from the vehicle header. Full
-  list, newest first, grouped by year with a yearly count and total; summary of
-  services, total spent, last service, and receipt count. Each row shows date, work
-  done (service tags plus line-item descriptions), shop, miles, cost, and a receipt
-  thumbnail. Search plus service-group filters and a "has receipt" toggle. A row
-  expands to its line items with amounts, Edit, and Delete. Image receipts open in
-  a viewer (bottom sheet on phone); PDFs open in a new tab. Rows stack on phone.
-  Add service opens the drawer.
-- **Receipt review** - receipt image beside editable fields; Confirm writes the
-  record.
+- **Vehicle detail** (`/vehicles/:id`) - header with photo, ODO, and actions
+  (redesigned in feature 10); service cards in a 2-column grid (1 on phone), most
+  urgent first, each with countdown, interval progress bar, and last done / next
+  due, where last done links to its record (feature 9). Minder due items sit in the
+  same grid with a code chip. An Other maintenance section lists no-interval
+  services with last done and time/miles since (feature 11).
+- **Service history** (`/vehicles/:id/services`) - full list newest first, grouped
+  by year with count and total; summary stats; search, service-group filters, and a
+  "has receipt" toggle. A row expands to its line items with amounts and Delete.
+  Image receipts open in a viewer; PDFs open in a new tab.
+- **Receipts** (`/receipts`, `/receipts/new`, `/receipts/:id/review`) - list of
+  line items with a status pill naming the action needed; upload; review with the
+  receipt image beside editable fields, where Confirm writes the record.
 - **Bulk quick-review list** - one editable row per receipt (date, shop, odometer,
   services), batch confirm, full review on demand. Designed for laptop width.
-- **Drawers** - last done, add service, log odometer (with recent readings), log
-  Minder code (with recent codes).
-
-> TODO: route paths are not set in the plan; choose them in feature 1.
 
 ## Deployment
 
@@ -273,6 +288,10 @@ sheet on phone instead of inline forms or separate pages. Design reference:
 
 > Resolve in the plans, then re-run /overview.
 
-- Intervals for both vehicles and Odyssey Minder sub-item meanings (owner's manuals; Odyssey intervals copied from the Corolla in feature 4).
-- Route paths (feature 1).
+- Intervals for both vehicles and Odyssey Minder sub-item meanings (owner's manuals;
+  Odyssey intervals copied from the Corolla in feature 4).
+- How feature 11 marks a service as other maintenance: inspection services (for
+  example Multi-point inspection) also have no Corolla schedule item, so "no
+  schedule item" alone would list them too.
+- Feature 10's exact layout is not specified; `/prototype` can settle it first.
 - Worker, D1, and R2 names and Access policy (feature 1).
